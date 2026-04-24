@@ -1,5 +1,10 @@
 <template>
-  <button>Level 1</button>
+  <div class="lvlcontain">
+    <h1>Level Selector</h1>
+    <button>Level 1</button>
+    <button>Level 2</button>
+    <button>Level 3</button>
+  </div>
 </template>
 
 <script setup>
@@ -16,10 +21,19 @@
 </script>
 
 <style scoped>
+
+.lvlcontain {
+  color: white;
+  width: 20%;
+  height: 20%;
+  background-color: gray;
+  justify-content: center;
+}
 button {
+  background-color: rgb(120, 228, 255);
   width: 200px;
   height: 200px;
   text-align: center;
-  font-size: 50px;
+  font-size: 35px;
 }
 </style>
