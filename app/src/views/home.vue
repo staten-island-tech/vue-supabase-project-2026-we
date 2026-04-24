@@ -1,9 +1,21 @@
 <template>
+  <div>
   <div class="lvlcontain">
-    <h1>Level Selector</h1>
-    <button>Level 1</button>
-    <button>Level 2</button>
-    <button>Level 3</button>
+    <h1>Song Selector</h1>
+    <RouterLink to="/level1">
+      <div>
+        <h1>Song Name 1</h1>
+        <h2>Artist Name</h2>
+        <p>Easy</p>
+      </div>
+    </RouterLink>
+    <RouterLink to="/level2">
+      <button>Level 2</button>
+    </RouterLink>
+    <RouterLink to="/level3">
+      <button>Level 3</button>
+    </RouterLink>
+  </div>
   </div>
 </template>
 
@@ -21,19 +33,32 @@
 </script>
 
 <style scoped>
+body {
+  background-color: rgb(156, 219, 255);
+}
 
 .lvlcontain {
+  position: absolute;
+  top: 10%;
+  left: 10%;
   color: white;
-  width: 20%;
-  height: 20%;
-  background-color: gray;
-  justify-content: center;
+  width: 15%;
+  height: auto;
+  background-color: rgb(255, 115, 115);
+  display: flex;
+  flex-direction: column; 
+  align-items: center; 
+  gap: 10px; 
+  padding-bottom: 20px;
+  border-radius: 20px;
 }
-button {
+
+.levelcard {
   background-color: rgb(120, 228, 255);
   width: 200px;
   height: 200px;
   text-align: center;
   font-size: 35px;
+  border-radius: 20px;
 }
 </style>
