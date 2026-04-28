@@ -3,17 +3,26 @@
   <div class="lvlcontain">
     <h1>Song Selector</h1>
     <RouterLink to="/level1">
-      <div class="levelcard">
-        <h1>Song Name 1</h1>
-        <h2>Artist Name</h2>
+    <div class="levelcard">
+      <img src="/image.png">
+      <div class="text">
+        <h2>Song Name</h2>
+        <p>Artist Name</p>
         <p>Easy</p>
       </div>
+    </div>
     </RouterLink>
     <RouterLink to="/level2">
-      <button>Level 2</button>
+      <div class="levelcard">
+      </div>
     </RouterLink>
     <RouterLink to="/level3">
-      <button>Level 3</button>
+      <div class="levelcard">
+      </div>
+    </RouterLink>
+    <RouterLink to="/level4">
+      <div class="levelcard">
+      </div>
     </RouterLink>
   </div>
   </div>
@@ -33,18 +42,15 @@
 </script>
 
 <style scoped>
-body {
-  background-color: rgb(156, 219, 255);
-}
 
 .lvlcontain {
   position: absolute;
   top: 10%;
   left: 10%;
   color: white;
-  width: 15%;
-  height: auto;
-  background-color: rgb(255, 115, 115);
+  width: 20%;
+  height: 75%;
+  background-color: #920075;
   display: flex;
   flex-direction: column; 
   align-items: center; 
@@ -54,11 +60,51 @@ body {
 }
 
 .levelcard {
-  background-color: rgb(120, 228, 255);
-  width: 200px;
-  height: 200px;
-  text-align: center;
-  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  background-color: #F6019D;
+  width: 325px;
+  height: 145px;
   border-radius: 20px;
+
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.levelcard img {
+  width: 90px;
+  height: 90px;
+  border-radius: 15px;
+  object-fit: cover;
+}
+
+.text {
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
+.text h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.text p {
+  margin: 2px 0;
+  font-size: 14px;
+  opacity: 0.8;
 }
 </style>
