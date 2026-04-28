@@ -3,7 +3,7 @@
   <div class="lvlcontain">
     <h1>Song Selector</h1>
     <RouterLink to="/level1">
-      <div>
+      <div class="levelcard">
         <h1>Song Name 1</h1>
         <h2>Artist Name</h2>
         <p>Easy</p>
@@ -58,7 +58,7 @@ body {
   width: 200px;
   height: 200px;
   text-align: center;
-  font-size: 35px;
+  font-size: 10px;
   border-radius: 20px;
 }
 </style>
