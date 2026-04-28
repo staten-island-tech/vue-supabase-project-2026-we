@@ -4,7 +4,7 @@
     <h1>Song Selector</h1>
     <RouterLink to="/level1">
     <div class="levelcard">
-
+      <img src="/image.png">
       <div class="text">
         <h2>Song Name</h2>
         <p>Artist Name</p>
@@ -81,14 +81,25 @@
 }
 
 .text {
+  color: white;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
 .text h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 25px;
 }
 
 .text p {
