@@ -62,7 +62,7 @@
 .levelcard {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
 
   background-color: #F6019D;
   width: 325px;
@@ -87,6 +87,16 @@
   justify-content: center;
 }
 
+.text h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.text p {
+  margin: 2px 0;
+  font-size: 16px;
+  opacity: 0.8;
+}
 a {
   text-decoration: none;
   color: inherit;
@@ -97,14 +107,4 @@ a:visited {
   color: inherit;
 }
 
-.text h2 {
-  margin: 0;
-  font-size: 25px;
-}
-
-.text p {
-  margin: 2px 0;
-  font-size: 14px;
-  opacity: 0.8;
-}
 </style>
