@@ -75,7 +75,6 @@ onMounted(() => {
 .game-container {
   width: 100vw;
   height: 100vh;
-  background: #1a1a1a;
   overflow: hidden;
 }
 .overlay {
