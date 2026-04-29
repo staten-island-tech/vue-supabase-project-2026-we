@@ -15,8 +15,6 @@
           <p>Difficulty: {{ level.difficulty }}</p>
         </div>
       </div>
-      <div class="levelcard">
-      </div>
   </div>
   <div class="playcard" v-if="selectedLevel">
   <p class="level">LEVEL</p>
@@ -27,11 +25,11 @@
     <span class="score">{{ selectedLevel.points }} POINTS</span>
   </div>
 
-   <RouterLink to="{{ selectedLevel.link }}"><button class="playbtn">
+   <RouterLink :to="selectedLevel.link"><button class="playbtn">
     ▶ PLAY
     <p>START SESSION</p>
   </button></RouterLink>
-</div>
+  </div>
   <div class="leaderboard">
     <h2>LEADERBOARD</h2>
     <div class="scoreline">
@@ -74,8 +72,25 @@ const levels = [
     desc: 'guy with hat',
     difficulty: 'Medium',
     points: 2000,
-    img: '/lincoln.png'
-  }
+    img: '/lincoln.png',
+    link: '/level2'
+  },
+    {
+    name: 'sheep',
+    desc: 'baaaa',
+    difficulty: 'Hard',
+    points: 3000,
+    img: '/quandale.png',
+    link: '/level3'
+  },
+    {
+    name: 'ghost',
+    desc: 'booooo',
+    difficulty: 'Nightmare',
+    points: 4000,
+    img: '/quandale.png',
+    link: '/level4'
+  },
 ]
 
 function selectLevel(level) {
