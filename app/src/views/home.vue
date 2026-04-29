@@ -2,50 +2,36 @@
   <div>
   <div class="lvlcontain">
     <h1>Song Selector</h1>
-    <RouterLink to="/level1">
-    <div class="levelcard">
-      <img src="/quandale.png">
-      <div class="text">
-        <h2>fortnite</h2>
-        <p>guy from fortnite</p>
-        <p>Difficulty: Easy</p>
+      <div 
+        class="levelcard" 
+        v-for="level in levels" 
+        :key="level.name"
+        @click="selectLevel(level)"
+      >
+        <img :src="level.img">
+        <div class="text">
+          <h2>{{ level.name }}</h2>
+          <p>{{ level.desc }}</p>
+          <p>Difficulty: {{ level.difficulty }}</p>
+        </div>
       </div>
-    </div>
-    </RouterLink>
-    <RouterLink to="/level2">
-    <div class="levelcard">
-      <img src="/lincoln.png">
-      <div class="text">
-        <h2>trickshot</h2>
-        <p>guy with hat</p>
-        <p>Difficulty: Medium</p>
-      </div>
-    </div>
-    </RouterLink>
-    <RouterLink to="/level3">
       <div class="levelcard">
       </div>
-    </RouterLink>
-    <RouterLink to="/level4">
-      <div class="levelcard">
-      </div>
-    </RouterLink>
   </div>
-  <div class="playcard">
-    <p class="level">LEVEL</p>
-    <h1>LEVEL NAME</h1>
+  <div class="playcard" v-if="selectedLevel">
+  <p class="level">LEVEL</p>
+  <h1>{{ selectedLevel.name }}</h1>
 
-    <div class="difficulty">
-      <span class="easy">✦ EASY</span>
-      <span class="score">1,000 POINTS</span>
-    </div>
-
-    <button class="playbtn">
-      ▶ PLAY
-      <p>START SESSION</p>
-    </button>
+  <div class="difficulty">
+    <span class="easy">✦ {{ selectedLevel.difficulty.toUpperCase() }}</span>
+    <span class="score">{{ selectedLevel.points }} POINTS</span>
   </div>
 
+   <RouterLink to="{{ selectedLevel.link }}"><button class="playbtn">
+    ▶ PLAY
+    <p>START SESSION</p>
+  </button></RouterLink>
+</div>
   <div class="leaderboard">
     <h2>LEADERBOARD</h2>
     <div class="scoreline">
@@ -69,6 +55,33 @@
 //Make the function for the user to time it
 //If > the timing, DIEEE
 //If = the timing or has 0.1 second offset, move on and reset it :D
+
+import { ref } from 'vue'
+
+const selectedLevel = ref(null)
+
+const levels = [
+  {
+    name: 'fortnite',
+    desc: 'guy from fortnite',
+    difficulty: 'Easy',
+    points: 1000,
+    img: '/quandale.png',
+    link: '/level1'
+  },
+  {
+    name: 'trickshot',
+    desc: 'guy with hat',
+    difficulty: 'Medium',
+    points: 2000,
+    img: '/lincoln.png'
+  }
+]
+
+function selectLevel(level) {
+  selectedLevel.value = level
+}
+
 </script>
 
 <style scoped>
@@ -101,7 +114,14 @@
 
   padding: 15px;
   box-sizing: border-box;
+  cursor: pointer;
 }
+
+.levelcard:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
 .levelcard img {
   width: 90px;
   height: 90px;
@@ -159,7 +179,6 @@ a:visited {
   align-items: center;
   margin-bottom: 30px;
 }
-
 
 .playbtn {
   width: 100%;
