@@ -1,46 +1,43 @@
 <template>
   <div>
-  <div class="lvlcontain">
-    <h1>Song Selector</h1>
-      <div 
-        class="levelcard" 
-        v-for="level in levels" 
-        :key="level.name"
-        @click="selectLevel(level)"
-      >
-        <img :src="level.img">
+    <div class="lvlcontain">
+      <h1>Song Selector</h1>
+      <div class="levelcard" v-for="level in levels" :key="level.name" @click="selectLevel(level)">
+        <img :src="level.img" />
         <div class="text">
           <h2>{{ level.name }}</h2>
           <p>{{ level.desc }}</p>
           <p>Difficulty: {{ level.difficulty }}</p>
         </div>
       </div>
-  </div>
-  <div class="playcard" v-if="selectedLevel">
-  <p class="level">LEVEL</p>
-  <h1>{{ selectedLevel.name }}</h1>
-
-  <div class="difficulty">
-    <span class="easy">✦ {{ selectedLevel.difficulty.toUpperCase() }}</span>
-    <span class="score">{{ selectedLevel.points }} POINTS</span>
-  </div>
-
-   <RouterLink :to="selectedLevel.link"><button class="playbtn">
-    ▶ PLAY
-    <p>START SESSION</p>
-  </button></RouterLink>
-  </div>
-  <div class="leaderboard">
-    <h2>LEADERBOARD</h2>
-    <div class="scoreline">
-      <span>Player One</span>
-      <span>1000</span>
     </div>
-    <div class="scoreline">
-      <span>Player Two</span>
-      <span>100</span>
+    <div class="playcard" v-if="selectedLevel">
+      <p class="level">LEVEL</p>
+      <h1>{{ selectedLevel.name }}</h1>
+
+      <div class="difficulty">
+        <span class="easy">✦ {{ selectedLevel.difficulty.toUpperCase() }}</span>
+        <span class="score">{{ selectedLevel.points }} POINTS</span>
+      </div>
+
+      <RouterLink :to="selectedLevel.link"
+        ><button class="playbtn">
+          ▶ PLAY
+          <p>START SESSION</p>
+        </button></RouterLink
+      >
     </div>
-  </div>
+    <div class="leaderboard">
+      <h2>LEADERBOARD</h2>
+      <div class="scoreline">
+        <span>Player One</span>
+        <span>1000</span>
+      </div>
+      <div class="scoreline">
+        <span>Player Two</span>
+        <span>100</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -65,7 +62,7 @@ const levels = [
     difficulty: 'Easy',
     points: 1000,
     img: '/quandale.png',
-    link: '/level1'
+    link: '/level1',
   },
   {
     name: 'trickshot',
@@ -73,34 +70,32 @@ const levels = [
     difficulty: 'Medium',
     points: 2000,
     img: '/lincoln.png',
-    link: '/level2'
+    link: '/level2',
   },
-    {
+  {
     name: 'sheep',
     desc: 'baaaa',
     difficulty: 'Hard',
     points: 3000,
     img: '/quandale.png',
-    link: '/level3'
+    link: '/level3',
   },
-    {
+  {
     name: 'ghost',
     desc: 'booooo',
     difficulty: 'Nightmare',
     points: 4000,
     img: '/quandale.png',
-    link: '/level4'
+    link: '/level4',
   },
 ]
 
 function selectLevel(level) {
   selectedLevel.value = level
 }
-
 </script>
 
 <style scoped>
-
 .lvlcontain {
   position: absolute;
   top: 15%;
@@ -110,9 +105,9 @@ function selectLevel(level) {
   height: 75%;
   background-color: #920075;
   display: flex;
-  flex-direction: column; 
-  align-items: center; 
-  gap: 10px; 
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   padding-bottom: 20px;
   border-radius: 20px;
 }
@@ -122,7 +117,7 @@ function selectLevel(level) {
   align-items: center;
   gap: 20px;
 
-  background-color: #F6019D;
+  background-color: #f6019d;
   width: 325px;
   height: 145px;
   border-radius: 20px;
@@ -134,7 +129,7 @@ function selectLevel(level) {
 
 .levelcard:hover {
   transform: scale(1.05);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 .levelcard img {
@@ -174,7 +169,7 @@ a:visited {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #D40078;
+  background: #d40078;
   padding: 30px;
   border-radius: 20px;
   color: white;
@@ -201,20 +196,19 @@ a:visited {
   border-radius: 15px;
   border: none;
   font-size: 22px;
-  background: #F6019D;
+  background: #f6019d;
   color: white;
   cursor: pointer;
   transition: 0.2s;
 }
 .playbtn:hover {
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
 }
 .playbtn p {
   font-size: 12px;
   margin: 5px 0 0 0;
   opacity: 0.7;
 }
-
 
 .leaderboard {
   position: absolute;
