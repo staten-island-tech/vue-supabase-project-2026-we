@@ -33,7 +33,7 @@ const anchor = reactive({ x: 500, y: 500 })
 const radius = 150
 let angle = 0
 let blueIsAnchor = true
-let speed = 0.05 // Radians per frame (Adjustable for difficulty)
+let speed = 0.1 // Radians per frame (Adjustable for difficulty)
 
 const update = () => {
   // Move the angle forward every frame
@@ -70,7 +70,6 @@ const handleInteraction = (e) => {
     pivot()
 
     // Add a tiny "kick" animation for juice
-    gsap.fromTo('.ball', { scale: 1.2 }, { scale: 1, duration: 0.2 })
   }
 }
 
