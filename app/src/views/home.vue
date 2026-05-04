@@ -65,7 +65,7 @@ const levels = [
     link: '/level1',
   },
   {
-    name: 'trickshot',
+    name: 'guy',
     desc: 'guy with hat',
     difficulty: 'Medium',
     points: 2000,
