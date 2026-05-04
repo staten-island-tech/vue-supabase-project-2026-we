@@ -50,7 +50,6 @@
 //Make the function for the user to time it
 //If > the timing, DIEEE
 //If = the timing or has 0.1 second offset, move on and reset it :D
-
 import { ref } from 'vue'
 
 const selectedLevel = ref(null)
