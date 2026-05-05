@@ -2,7 +2,6 @@
   <div class="game-container">
     <svg width="100%" height="100%" viewBox="0 0 1000 1000">
 
-      <!-- Trails -->
       <circle
         v-for="(t, i) in iceTrail" :key="i"
         :cx="t.x" :cy="t.y"
@@ -18,7 +17,6 @@
         :opacity="i / TRAIL_LENGTH * 2"
       />
 
-      <!-- Balls -->
       <circle :cx="ice.x"  :cy="ice.y"  r="18" fill="#00e5ff" />
       <circle :cx="fire.x" :cy="fire.y" r="18" fill="#ff4d4d" />
 
@@ -59,7 +57,6 @@ const update = () => {
     anchor.y = fire.y
   }
 
-  // Push current position, drop oldest if over limit
   iceTrail.push({ x: ice.x, y: ice.y })
   fireTrail.push({ x: fire.x, y: fire.y })
   if (iceTrail.length  > TRAIL_LENGTH) iceTrail.shift()
