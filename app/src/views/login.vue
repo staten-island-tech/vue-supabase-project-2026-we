@@ -4,23 +4,41 @@
       <h1>Welcome Back</h1>
       <p class="subtitle">Sign in to continue</p>
 
-      <div class="error" v-if="error">{{ error }}</div>
+      <div class="error" v-if="error">
+        {{ error }}
+      </div>
 
       <div class="field">
-        <label>Email</label>
-        <input v-model="email" type="email" placeholder="you@example.com" />
+        <label>Username</label>
+        <input
+          v-model="username"
+          type="text"
+          placeholder="Enter username"
+        />
       </div>
 
       <div class="field">
         <label>Password</label>
-        <input v-model="password" type="password" placeholder="••••••••" />
+        <input
+          v-model="password"
+          type="password"
+          placeholder="••••••••"
+        />
       </div>
 
-      <button class="submit-btn" @click="handleLogin" :disabled="loading">
+      <button
+        class="submit-btn"
+        @click="handleLogin"
+        :disabled="loading"
+      >
         {{ loading ? 'Signing in...' : '▶ SIGN IN' }}
       </button>
 
-      <button class="alt-btn" @click="handleSignup" :disabled="loading">
+      <button
+        class="alt-btn"
+        @click="handleSignup"
+        :disabled="loading"
+      >
         No account? Sign Up
       </button>
     </div>
@@ -34,24 +52,28 @@ import { supabase } from '../lib/supabase'
 
 const router = useRouter()
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
+
+function makeFakeEmail(username) {
+  return `${username}@app.local`
+}
 
 async function handleLogin() {
   loading.value = true
   error.value = ''
 
   const { error: err } = await supabase.auth.signInWithPassword({
-    email: email.value,
+    email: makeFakeEmail(username.value),
     password: password.value,
   })
 
   if (err) {
     error.value = err.message
   } else {
-    router.push('/menu')
+    await router.push('/menu')
   }
 
   loading.value = false
@@ -62,14 +84,14 @@ async function handleSignup() {
   error.value = ''
 
   const { error: err } = await supabase.auth.signUp({
-    email: email.value,
+    email: makeFakeEmail(username.value),
     password: password.value,
   })
 
   if (err) {
     error.value = err.message
   } else {
-    error.value = 'Check your email to confirm your account!'
+    await router.push('/menu')
   }
 
   loading.value = false
@@ -94,6 +116,7 @@ async function handleSignup() {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 h1 {
@@ -136,7 +159,7 @@ input {
 }
 
 input::placeholder {
-  opacity: 0.4;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 input:focus {
@@ -155,7 +178,7 @@ input:focus {
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.25);
+  background: #ff2fb2;
 }
 
 .submit-btn:disabled {

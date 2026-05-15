@@ -24,8 +24,7 @@
         ><button class="playbtn">
           ▶ PLAY
           <p>START SESSION</p>
-        </button></RouterLink
-      >
+        </button></RouterLink>
     </div>
     <div class="leaderboard">
       <h2>LEADERBOARD</h2>
