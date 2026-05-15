@@ -24,8 +24,7 @@
         ><button class="playbtn">
           ▶ PLAY
           <p>START SESSION</p>
-        </button></RouterLink
-      >
+        </button></RouterLink>
     </div>
     <div class="leaderboard">
       <h2>LEADERBOARD</h2>
@@ -42,15 +41,6 @@
 </template>
 
 <script setup>
-// home will be the load screen :)
-// buttons that lead to different levels
-// level1.vue, level2.vue, level3.vue
-// code
-//Get the timing on all the levels
-//Make the function for the user to time it
-//If > the timing, DIEEE
-//If = the timing or has 0.1 second offset, move on and reset it :D
-
 import { ref } from 'vue'
 
 const selectedLevel = ref(null)
@@ -65,7 +55,7 @@ const levels = [
     link: '/level1',
   },
   {
-    name: 'trickshot',
+    name: 'guy',
     desc: 'guy with hat',
     difficulty: 'Medium',
     points: 2000,
@@ -230,3 +220,55 @@ a:visited {
   font-size: 18px;
 }
 </style>
+
+<!-- Silly AI -->
+
+<!-- <script setup>
+import { ref, onMounted, watch } from 'vue'
+import { supabase } from '../lib/supabase' // Path to your client file
+
+const levels = ref([])
+const selectedLevel = ref(null)
+const leaderboard = ref([])
+
+// 1. Fetch Levels from Supabase on load
+async function fetchLevels() {
+  const { data, error } = await supabase.from('levels').select('*')
+
+  if (error) console.error('Error fetching levels:', error)
+  else levels.value = data
+}
+
+// 2. Fetch Leaderboard for the selected level
+async function fetchLeaderboard(levelId) {
+  const { data, error } = await supabase
+    .from('leaderboard_scores')
+    .select(
+      `
+      score,
+      user_id,
+      profiles ( username ) 
+    `,
+    ) // This assumes you have a profiles table; otherwise just use user_id
+    .eq('level_id', levelId)
+    .order('score', { ascending: false })
+    .limit(5)
+
+  if (error) console.error('Error fetching leaderboard:', error)
+  else leaderboard.value = data
+}
+
+// Watch for level selection to update leaderboard
+watch(selectedLevel, (newLevel) => {
+  if (newLevel) fetchLeaderboard(newLevel.id)
+})
+
+onMounted(() => {
+  fetchLevels()
+})
+
+function selectLevel(level) {
+  selectedLevel.value = level
+}
+</script>
+ -->
