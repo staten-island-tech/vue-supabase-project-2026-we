@@ -1,4 +1,3 @@
-
 export const LEVELS = {
   1: {
     name: 'Fortnite',
@@ -40,4 +39,8 @@ export const LEVELS = {
     orbitSpeed: 0.18,
     orbitRadius: 120,
   },
+}
+
+export function getLevelById(id) {
+  return LEVELS[Number(id)] ?? null
 }

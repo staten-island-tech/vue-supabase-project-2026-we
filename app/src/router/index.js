@@ -17,10 +17,10 @@ const router = createRouter({
       component: home,
     },
     {
-      path: '/level',
+      path: '/level/:id',
       name: 'level',
       component: level,
-    }
+    },
   ],
 })
 
