@@ -2,9 +2,7 @@
   <div v-if="level">
     <Controls />
   </div>
-  <div v-else>
-    Level not found!
-  </div>
+  <div v-else>Level not found!</div>
 </template>
 
 <script setup>
