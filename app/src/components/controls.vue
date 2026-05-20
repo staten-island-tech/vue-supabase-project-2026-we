@@ -79,41 +79,22 @@ import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import gsap from 'gsap'
 import { LEVELS } from '@/components/levels.js'
 
-/*
-=====================================
-LEVEL
-=====================================
-*/
-
 const level = LEVELS[1]
 
-/*
-=====================================
-PLAYER
-=====================================
-*/
-
 const ice = reactive({
-  x: 500,
-  y: 500,
+  x: 0,
+  y: 0,
 })
 
 const fire = reactive({
-  x: 650,
-  y: 500,
+  x: 0,
+  y: 0,
 })
 
 const iceTrail = reactive([])
 const fireTrail = reactive([])
 
 const TRAIL_LENGTH = 12
-
-/*
-=====================================
-GAME STATE
-=====================================
-*/
-
 let angle = 0
 let iceIsAnchor = true
 
@@ -122,44 +103,22 @@ const judgement = ref('')
 
 let startTime = 0
 
-/*
-=====================================
-TILES
-=====================================
-*/
-
 const tiles = reactive([])
 
 function generateTiles() {
-  let x = 500
-  let y = 500
+  tiles.length = 0
 
-  tiles.push({ x, y })
-
-  const directions = [
-    [1, 0],
-    [0, 1],
-    [-1, 0],
-    [0, 1],
-    [1, 0],
-    [0, -1],
-  ]
+  const startX = 250
+  const y = 500
+  const spacing = 150
 
   for (let i = 0; i < level.beats.length + 3; i++) {
-    const dir = directions[i % directions.length]
-
-    x += dir[0] * 150
-    y += dir[1] * 150
-
-    tiles.push({ x, y })
+    tiles.push({
+      x: startX + i * spacing,
+      y,
+    })
   }
 }
-
-/*
-=====================================
-MOVEMENT
-=====================================
-*/
 
 function update() {
   angle += level.orbitSpeed
@@ -191,12 +150,6 @@ function update() {
   }
 }
 
-/*
-=====================================
-TIMING
-=====================================
-*/
-
 function checkTiming() {
   const currentTime = (performance.now() - startTime) / 1000
 
@@ -213,12 +166,6 @@ function checkTiming() {
   }
 }
 
-/*
-=====================================
-PIVOT
-=====================================
-*/
-
 function pivot() {
   if (currentBeat.value >= tiles.length - 1) {
     return
@@ -231,23 +178,30 @@ function pivot() {
   const nextTile = tiles[currentBeat.value]
 
   if (iceIsAnchor) {
-    ice.x = nextTile.x
-    ice.y = nextTile.y
-  } else {
     fire.x = nextTile.x
     fire.y = nextTile.y
+
+    angle += Math.PI
+
+    ice.x =
+      fire.x + level.orbitRadius * Math.cos(angle)
+
+    ice.y =
+      fire.y + level.orbitRadius * Math.sin(angle)
+  } else {
+    ice.x = nextTile.x
+    ice.y = nextTile.y
+    angle += Math.PI
+
+    fire.x =
+      ice.x + level.orbitRadius * Math.cos(angle)
+
+    fire.y =
+      ice.y + level.orbitRadius * Math.sin(angle)
   }
 
   iceIsAnchor = !iceIsAnchor
-
-  angle = 0
 }
-
-/*
-=====================================
-INPUT
-=====================================
-*/
 
 function handleInteraction(e) {
   if (e.repeat) return
@@ -257,22 +211,28 @@ function handleInteraction(e) {
   }
 }
 
-/*
-=====================================
-MOUNT
-=====================================
-*/
-
 onMounted(() => {
   generateTiles()
+
+  ice.x = tiles[0].x
+  ice.y = tiles[0].y
+
+  fire.x = ice.x + level.orbitRadius
+  fire.y = ice.y
 
   startTime = performance.now()
 
   gsap.ticker.add(update)
 
-  window.addEventListener('keydown', handleInteraction)
+  window.addEventListener(
+    'keydown',
+    handleInteraction
+  )
 
-  window.addEventListener('mousedown', handleInteraction)
+  window.addEventListener(
+    'mousedown',
+    handleInteraction
+  )
 })
 
 onUnmounted(() => {
