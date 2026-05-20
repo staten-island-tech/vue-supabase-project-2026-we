@@ -1,0 +1,42 @@
+export const LEVELS = {
+  1: {
+    name: 'Fortnite',
+    difficulty: 'Easy',
+    bpm: 80,
+    beats: [1.0, 1.75, 2.5, 3.25, 4.0, 5.5, 6.25, 7.0, 7.75, 8.5, 10.0, 10.75, 11.5],
+    windowMs: 220,
+    orbitSpeed: 0.06,
+    orbitRadius: 150,
+  },
+  2: {
+    name: 'Guy',
+    difficulty: 'Medium',
+    bpm: 110,
+    beats: [0.8, 1.35, 1.9, 2.45, 3.0, 3.55, 4.6, 5.15, 5.7, 6.25, 6.8, 7.9, 8.45, 9.0],
+    windowMs: 175,
+    orbitSpeed: 0.09,
+    orbitRadius: 140,
+  },
+  3: {
+    name: 'Sheep',
+    difficulty: 'Hard',
+    bpm: 140,
+    beats: [0.5, 0.93, 1.36, 1.79, 2.22, 2.65, 3.08, 3.51, 3.94, 4.37, 4.8, 5.23, 5.66, 6.09, 6.95, 7.38, 7.81],
+    windowMs: 130,
+    orbitSpeed: 0.13,
+    orbitRadius: 130,
+  },
+  4: {
+    name: 'Ghost',
+    difficulty: 'Nightmare',
+    bpm: 180,
+    beats: [0.33, 0.66, 0.99, 1.32, 1.65, 1.98, 2.31, 2.64, 2.97, 3.3, 3.63, 3.96, 4.29, 4.62, 4.95, 5.28, 5.94, 6.27, 6.6, 6.93],
+    windowMs: 90,
+    orbitSpeed: 0.18,
+    orbitRadius: 120,
+  },
+}
+
+export function getLevelById(id) {
+  return LEVELS[Number(id)] ?? null
+}
