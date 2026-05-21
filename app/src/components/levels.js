@@ -10,7 +10,7 @@ export const LEVELS = {
     beats: [1.0, 1.75, 2.5, 3.25, 4.0, 5.5, 6.25, 7.0, 7.75, 8.5, 10.0, 10.75, 11.5],
     windowMs: 220,
     orbitSpeed: 0.06,
-    orbitRadius: 150,
+    beats: 13,
   },
   2: {
     id: 2,
@@ -23,7 +23,7 @@ export const LEVELS = {
     beats: [0.8, 1.35, 1.9, 2.45, 3.0, 3.55, 4.6, 5.15, 5.7, 6.25, 6.8, 7.9, 8.45, 9.0],
     windowMs: 175,
     orbitSpeed: 0.09,
-    orbitRadius: 140,
+    beats: 16,
   },
   3: {
     id: 3,
@@ -39,7 +39,7 @@ export const LEVELS = {
     ],
     windowMs: 130,
     orbitSpeed: 0.13,
-    orbitRadius: 130,
+    beats: 20,
   },
   4: {
     id: 4,
@@ -55,7 +55,7 @@ export const LEVELS = {
     ],
     windowMs: 90,
     orbitSpeed: 0.18,
-    orbitRadius: 120,
+    beats: 24,
   },
 }
 
