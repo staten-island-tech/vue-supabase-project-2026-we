@@ -1,82 +1,156 @@
 <template>
   <div class="game-container">
-    <svg width="100%" height="100%" viewBox="0 0 1000 1000">
-
-      <circle
-        v-for="(t, i) in iceTrail" :key="i"
-        :cx="t.x" :cy="t.y"
-        :r="18 * (i / TRAIL_LENGTH)"
-        fill="#00e5ff"
-        :opacity="i / TRAIL_LENGTH * 2"
-      />
-      <circle
-        v-for="(t, i) in fireTrail" :key="i"
-        :cx="t.x" :cy="t.y"
-        :r="18 * (i / TRAIL_LENGTH)"
-        fill="#ff4d4d"
-        :opacity="i / TRAIL_LENGTH * 2"
+    <svg viewBox="0 0 1000 1000" width="100%" height="100%">
+      <line
+        v-for="(t, i) in tiles.slice(0, -1)"
+        :key="i"
+        :x1="t.x"
+        :y1="t.y"
+        :x2="tiles[i + 1].x"
+        :y2="tiles[i + 1].y"
+        stroke="#444"
+        stroke-width="6"
       />
 
-      <circle :cx="ice.x"  :cy="ice.y"  r="18" fill="#00e5ff" />
+      <circle
+        v-for="(t, i) in tiles"
+        :key="i"
+        :cx="t.x"
+        :cy="t.y"
+        r="18"
+        fill="#222"
+        stroke="white"
+        stroke-width="4"
+      />
+
+      <circle :cx="ice.x" :cy="ice.y" r="18" fill="#00e5ff" />
       <circle :cx="fire.x" :cy="fire.y" r="18" fill="#ff4d4d" />
-
     </svg>
+
+    <div class="lvlname">{{ level.name }}</div>
+    <div class="judge">{{ judgement }}</div>
+    <div class="score">Score: {{ score }}</div>
   </div>
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import gsap from 'gsap'
 
-const ice    = reactive({ x: 500, y: 500 })
-const fire   = reactive({ x: 650, y: 500 })
-const anchor = reactive({ x: 500, y: 500 })
+const props = defineProps({ level: Object })
+const level = props.level
 
-const RADIUS       = 150
-const SPEED        = 0.1
-const TRAIL_LENGTH = 20
+const ice = reactive({ x: 0, y: 0 })
+const fire = reactive({ x: 0, y: 0 })
 
-const iceTrail  = reactive([])
-const fireTrail = reactive([])
+const tiles = reactive([])
 
-let angle       = 0
-let iceIsAnchor = true
+const judgement = ref('')
+const score = ref(0)
 
-const update = () => {
-  angle += SPEED
+let beat = 0
+let angle = 0
+let anchorIsIce = true
 
-  if (iceIsAnchor) {
-    fire.x   = ice.x  + RADIUS * Math.cos(angle)
-    fire.y   = ice.y  + RADIUS * Math.sin(angle)
-    anchor.x = ice.x
-    anchor.y = ice.y
-  } else {
-    ice.x    = fire.x + RADIUS * Math.cos(angle)
-    ice.y    = fire.y + RADIUS * Math.sin(angle)
-    anchor.x = fire.x
-    anchor.y = fire.y
+const RADIUS = 150
+const SNAP = 45
+const PERFECT = 18
+
+const START_X = -340
+const SPACING = 150
+const Y = 500
+
+const distance = (a, b) =>
+  Math.hypot(a.x - b.x, a.y - b.y)
+
+const orbit = (a, b) => {
+  b.x = a.x + RADIUS * Math.cos(angle)
+  b.y = a.y + RADIUS * Math.sin(angle)
+}
+
+function setJudge(text) {
+  judgement.value = text
+  setTimeout(() => {
+    if (judgement.value === text) judgement.value = ''
+  }, 400)
+}
+
+function pivot() {
+  const next = tiles[beat + 1]
+  const mover = anchorIsIce ? fire : ice
+
+  const dist = distance(mover, next)
+
+  if (dist > SNAP) {
+    setJudge('Miss')
+    return
   }
 
-  iceTrail.push({ x: ice.x, y: ice.y })
-  fireTrail.push({ x: fire.x, y: fire.y })
-  if (iceTrail.length  > TRAIL_LENGTH) iceTrail.shift()
-  if (fireTrail.length > TRAIL_LENGTH) fireTrail.shift()
-}
-
-const pivot = () => {
-  iceIsAnchor = !iceIsAnchor
+  beat++
   angle += Math.PI
+
+  if (dist <= PERFECT) {
+    score.value += 50
+    setJudge('Perfect +50')
+  } else {
+    setJudge('Hit')
+  }
+
+  if (anchorIsIce) {
+    fire.x = next.x
+    fire.y = next.y
+    orbit(fire, ice)
+  } else {
+    ice.x = next.x
+    ice.y = next.y
+    orbit(ice, fire)
+  }
+
+  anchorIsIce = !anchorIsIce
 }
 
-const handleInteraction = (e) => {
-  if (e.repeat) return
-  if (e.code === 'Space' || e.type === 'mousedown') pivot()
+function generateTiles() {
+  tiles.length = 0
+
+  for (let i = 0; i < level.beats; i++) {
+    tiles.push({
+      x: START_X + i * SPACING,
+      y: Y,
+    })
+  }
+}
+
+function update() {
+  angle += level.orbitSpeed
+  anchorIsIce ? orbit(ice, fire) : orbit(fire, ice)
+}
+
+function handle(e) {
+  if (!e.repeat && (e.code === 'Space' || e.type === 'mousedown')) {
+    pivot()
+  }
 }
 
 onMounted(() => {
+  generateTiles()
+
+  ice.x = tiles[0].x
+  ice.y = tiles[0].y
+
+  fire.x = ice.x + RADIUS
+  fire.y = ice.y
+
   gsap.ticker.add(update)
-  window.addEventListener('keydown', handleInteraction)
-  window.addEventListener('mousedown', handleInteraction)
+
+  window.addEventListener('keydown', handle)
+  window.addEventListener('mousedown', handle)
+})
+
+onUnmounted(() => {
+  gsap.ticker.remove(update)
+
+  window.removeEventListener('keydown', handle)
+  window.removeEventListener('mousedown', handle)
 })
 </script>
 
@@ -84,7 +158,40 @@ onMounted(() => {
 .game-container {
   width: 100vw;
   height: 100vh;
-  background-color: #111;
+  background: #111;
   overflow: hidden;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+}
+
+.lvlname {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 72px;
+  font-weight: bold;
+  color: white;
+}
+
+.judge {
+  position: fixed;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 24px;
+}
+
+.score {
+  position: fixed;
+  top: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 24px;
 }
 </style>

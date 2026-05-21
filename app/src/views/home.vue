@@ -2,7 +2,7 @@
   <div>
     <div class="lvlcontain">
       <h1>Song Selector</h1>
-      <div class="levelcard" v-for="level in levels" :key="level.name" @click="selectLevel(level)">
+      <div class="levelcard" v-for="level in levels" :key="level.id" @click="selectLevel(level)">
         <img :src="level.img" />
         <div class="text">
           <h2>{{ level.name }}</h2>
@@ -11,21 +11,22 @@
         </div>
       </div>
     </div>
+
     <div class="playcard" v-if="selectedLevel">
       <p class="level">LEVEL</p>
       <h1>{{ selectedLevel.name }}</h1>
-
       <div class="difficulty">
         <span class="easy">✦ {{ selectedLevel.difficulty.toUpperCase() }}</span>
         <span class="score">{{ selectedLevel.points }} POINTS</span>
       </div>
-
-      <RouterLink :to="selectedLevel.link"
-        ><button class="playbtn">
+      <RouterLink :to="{ name: 'level', params: { id: selectedLevel.id } }">
+        <button class="playbtn">
           ▶ PLAY
           <p>START SESSION</p>
-        </button></RouterLink>
+        </button>
+      </RouterLink>
     </div>
+
     <div class="leaderboard">
       <h2>LEADERBOARD</h2>
       <div class="scoreline">
@@ -46,38 +47,10 @@ import { ref } from 'vue'
 const selectedLevel = ref(null)
 
 const levels = [
-  {
-    name: 'fortnite',
-    desc: 'guy from fortnite',
-    difficulty: 'Easy',
-    points: 1000,
-    img: '/quandale.png',
-    link: '/level1',
-  },
-  {
-    name: 'guy',
-    desc: 'guy with hat',
-    difficulty: 'Medium',
-    points: 2000,
-    img: '/lincoln.png',
-    link: '/level2',
-  },
-  {
-    name: 'sheep',
-    desc: 'baaaa',
-    difficulty: 'Hard',
-    points: 3000,
-    img: '/quandale.png',
-    link: '/level3',
-  },
-  {
-    name: 'ghost',
-    desc: 'booooo',
-    difficulty: 'Nightmare',
-    points: 4000,
-    img: '/quandale.png',
-    link: '/level4',
-  },
+  { id: 1, name: 'Fortnite', desc: 'guy from fortnite', difficulty: 'Easy',      points: 1000, img: '/quandale.png' },
+  { id: 2, name: 'Guy',      desc: 'guy with hat',      difficulty: 'Medium',    points: 2000, img: '/lincoln.png'  },
+  { id: 3, name: 'Sheep',    desc: 'baaaa',             difficulty: 'Hard',      points: 3000, img: '/quandale.png' },
+  { id: 4, name: 'Ghost',    desc: 'booooo',            difficulty: 'Nightmare', points: 4000, img: '/quandale.png' },
 ]
 
 function selectLevel(level) {
@@ -106,12 +79,10 @@ function selectLevel(level) {
   display: flex;
   align-items: center;
   gap: 20px;
-
   background-color: #f6019d;
   width: 325px;
   height: 145px;
   border-radius: 20px;
-
   padding: 15px;
   box-sizing: border-box;
   cursor: pointer;
@@ -145,6 +116,7 @@ function selectLevel(level) {
   font-size: 16px;
   opacity: 0.8;
 }
+
 a {
   text-decoration: none;
   color: inherit;
@@ -220,55 +192,3 @@ a:visited {
   font-size: 18px;
 }
 </style>
-
-<!-- Silly AI -->
-
-<!-- <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { supabase } from '../lib/supabase' // Path to your client file
-
-const levels = ref([])
-const selectedLevel = ref(null)
-const leaderboard = ref([])
-
-// 1. Fetch Levels from Supabase on load
-async function fetchLevels() {
-  const { data, error } = await supabase.from('levels').select('*')
-
-  if (error) console.error('Error fetching levels:', error)
-  else levels.value = data
-}
-
-// 2. Fetch Leaderboard for the selected level
-async function fetchLeaderboard(levelId) {
-  const { data, error } = await supabase
-    .from('leaderboard_scores')
-    .select(
-      `
-      score,
-      user_id,
-      profiles ( username ) 
-    `,
-    ) // This assumes you have a profiles table; otherwise just use user_id
-    .eq('level_id', levelId)
-    .order('score', { ascending: false })
-    .limit(5)
-
-  if (error) console.error('Error fetching leaderboard:', error)
-  else leaderboard.value = data
-}
-
-// Watch for level selection to update leaderboard
-watch(selectedLevel, (newLevel) => {
-  if (newLevel) fetchLeaderboard(newLevel.id)
-})
-
-onMounted(() => {
-  fetchLevels()
-})
-
-function selectLevel(level) {
-  selectedLevel.value = level
-}
-</script>
- -->
