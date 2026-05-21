@@ -108,11 +108,11 @@ const tiles = reactive([])
 function generateTiles() {
   tiles.length = 0
 
-  const startX = 250
+  const startX = -300
   const y = 500
   const spacing = 150
 
-  for (let i = 0; i < level.beats.length + 3; i++) {
+  for (let i = 0; i < level.beats.length - 3; i++) {
     tiles.push({
       x: startX + i * spacing,
       y,
@@ -183,21 +183,17 @@ function pivot() {
 
     angle += Math.PI
 
-    ice.x =
-      fire.x + level.orbitRadius * Math.cos(angle)
+    ice.x = fire.x + level.orbitRadius * Math.cos(angle)
 
-    ice.y =
-      fire.y + level.orbitRadius * Math.sin(angle)
+    ice.y = fire.y + level.orbitRadius * Math.sin(angle)
   } else {
     ice.x = nextTile.x
     ice.y = nextTile.y
     angle += Math.PI
 
-    fire.x =
-      ice.x + level.orbitRadius * Math.cos(angle)
+    fire.x = ice.x + level.orbitRadius * Math.cos(angle)
 
-    fire.y =
-      ice.y + level.orbitRadius * Math.sin(angle)
+    fire.y = ice.y + level.orbitRadius * Math.sin(angle)
   }
 
   iceIsAnchor = !iceIsAnchor
@@ -224,15 +220,9 @@ onMounted(() => {
 
   gsap.ticker.add(update)
 
-  window.addEventListener(
-    'keydown',
-    handleInteraction
-  )
+  window.addEventListener('keydown', handleInteraction)
 
-  window.addEventListener(
-    'mousedown',
-    handleInteraction
-  )
+  window.addEventListener('mousedown', handleInteraction)
 })
 
 onUnmounted(() => {

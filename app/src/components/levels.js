@@ -1,7 +1,11 @@
 export const LEVELS = {
   1: {
+    id: 1,
     name: 'Fortnite',
+    desc: 'guy from fortnite',
     difficulty: 'Easy',
+    points: 1000,
+    img: '/quandale.png',
     bpm: 80,
     beats: [1.0, 1.75, 2.5, 3.25, 4.0, 5.5, 6.25, 7.0, 7.75, 8.5, 10.0, 10.75, 11.5],
     windowMs: 220,
@@ -9,8 +13,12 @@ export const LEVELS = {
     orbitRadius: 150,
   },
   2: {
+    id: 2,
     name: 'Guy',
+    desc: 'guy with hat',
     difficulty: 'Medium',
+    points: 2000,
+    img: '/lincoln.png',
     bpm: 110,
     beats: [0.8, 1.35, 1.9, 2.45, 3.0, 3.55, 4.6, 5.15, 5.7, 6.25, 6.8, 7.9, 8.45, 9.0],
     windowMs: 175,
@@ -18,8 +26,12 @@ export const LEVELS = {
     orbitRadius: 140,
   },
   3: {
+    id: 3,
     name: 'Sheep',
+    desc: 'baaaa',
     difficulty: 'Hard',
+    points: 3000,
+    img: '/quandale.png',
     bpm: 140,
     beats: [
       0.5, 0.93, 1.36, 1.79, 2.22, 2.65, 3.08, 3.51, 3.94, 4.37, 4.8, 5.23, 5.66, 6.09, 6.95, 7.38,
@@ -30,7 +42,11 @@ export const LEVELS = {
     orbitRadius: 130,
   },
   4: {
+    id: 4,
     name: 'Ghost',
+    desc: 'booooo',
+    points: 4000,
+    img: '/quandale.png',
     difficulty: 'Nightmare',
     bpm: 180,
     beats: [
