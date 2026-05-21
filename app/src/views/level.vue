@@ -1,6 +1,6 @@
 <template>
   <div v-if="level">
-    <Controls />
+    <Controls :level="level" />
   </div>
   <div v-else>Level not found!</div>
 </template>
