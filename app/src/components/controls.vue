@@ -32,6 +32,8 @@
     <div class="judge">{{ judgement }}</div>
     <div class="score">Score: {{ score }}</div>
   </div>
+
+  <RouterLink to="/menu"><button class="back">Back to Menu</button></RouterLink>
 </template>
 
 <script setup>
@@ -84,6 +86,29 @@ function setJudge(text) {
   }, 400)
 }
 
+function resetGame() {
+  beat = 0
+  angle = 0
+  anchorIsIce = true
+  score.value = 0
+
+  generateTiles()
+
+  ice.x = tiles[0].x
+  ice.y = tiles[0].y
+
+  fire.x = ice.x + RADIUS
+  fire.y = ice.y
+
+  camera.x = VIEW_CENTER_X - ice.x
+  camera.y = VIEW_CENTER_Y - ice.y
+
+  judgement.value = 'You missed!'
+  setTimeout(() => {
+    judgement.value = ''
+  }, 600)
+}
+
 function pivot() {
   const next = tiles[beat + 1]
 
@@ -93,7 +118,7 @@ function pivot() {
   const dist = distance(mover, next)
 
   if (dist > SNAP) {
-    setJudge('Miss')
+    resetGame()
     return
   }
 
@@ -236,5 +261,20 @@ svg {
   color: white;
   font-size: 24px;
   pointer-events: none;
+}
+
+.back {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 8px;
 }
 </style>
