@@ -6,17 +6,17 @@ export const LEVELS = {
   },
   2: {
     name: 'Guy',
-    orbitSpeed: 0.09,
+    orbitSpeed: 0.07,
     beats: 16,
   },
   3: {
     name: 'Sheep',
-    orbitSpeed: 0.13,
+    orbitSpeed: 0.085,
     beats: 20,
   },
   4: {
     name: 'Ghost',
-    orbitSpeed: 0.18,
+    orbitSpeed: 0.1,
     beats: 24,
   },
 }
