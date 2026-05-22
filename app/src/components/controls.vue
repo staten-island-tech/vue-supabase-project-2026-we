@@ -1,30 +1,31 @@
 <template>
   <div class="game-container">
     <svg viewBox="0 0 1000 1000" width="100%" height="100%">
-      <line
-        v-for="(t, i) in tiles.slice(0, -1)"
-        :key="i"
-        :x1="t.x"
-        :y1="t.y"
-        :x2="tiles[i + 1].x"
-        :y2="tiles[i + 1].y"
-        stroke="#444"
-        stroke-width="6"
-      />
 
-      <circle
-        v-for="(t, i) in tiles"
-        :key="i"
-        :cx="t.x"
-        :cy="t.y"
-        r="18"
-        fill="#222"
-        stroke="white"
-        stroke-width="4"
-      />
+      <g :transform="cameraTransform">
+        <line v-for="(t, i) in tiles.slice(0, -1)"
+          :key="'line-' + i"
+          :x1="t.x"
+          :y1="t.y"
+          :x2="tiles[i + 1].x"
+          :y2="tiles[i + 1].y"
+          stroke="white"
+          stroke-width="6"
+        />
 
-      <circle :cx="ice.x" :cy="ice.y" r="18" fill="#00e5ff" />
-      <circle :cx="fire.x" :cy="fire.y" r="18" fill="#ff4d4d" />
+        <circle v-for="(t, i) in tiles"
+          :key="'tile-' + i"
+          :cx="t.x"
+          :cy="t.y"
+          r="18"
+          fill="#222"
+          stroke="white"
+          stroke-width="4"
+        />
+
+        <circle :cx="ice.x" :cy="ice.y" r="18" fill="#00e5ff" />
+        <circle :cx="fire.x" :cy="fire.y" r="18" fill="#ff4d4d" />
+      </g>
     </svg>
 
     <div class="lvlname">{{ level.name }}</div>
@@ -34,10 +35,13 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, onUnmounted } from 'vue'
+import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import gsap from 'gsap'
 
-const props = defineProps({ level: Object })
+const props = defineProps({
+  level: Object,
+})
+
 const level = props.level
 
 const ice = reactive({ x: 0, y: 0 })
@@ -60,8 +64,10 @@ const START_X = -340
 const SPACING = 150
 const Y = 500
 
-const distance = (a, b) =>
-  Math.hypot(a.x - b.x, a.y - b.y)
+const VIEW_CENTER_X = 500
+const VIEW_CENTER_Y = 500
+
+const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 
 const orbit = (a, b) => {
   b.x = a.x + RADIUS * Math.cos(angle)
@@ -70,15 +76,20 @@ const orbit = (a, b) => {
 
 function setJudge(text) {
   judgement.value = text
+
   setTimeout(() => {
-    if (judgement.value === text) judgement.value = ''
+    if (judgement.value === text) {
+      judgement.value = ''
+    }
   }, 400)
 }
 
 function pivot() {
   const next = tiles[beat + 1]
-  const mover = anchorIsIce ? fire : ice
 
+  if (!next) return
+
+  const mover = anchorIsIce ? fire : ice
   const dist = distance(mover, next)
 
   if (dist > SNAP) {
@@ -121,13 +132,38 @@ function generateTiles() {
   }
 }
 
+const camera = reactive({
+  x: 0,
+  y: 0,
+})
+
+const cameraTransform = computed(() => {
+  return `translate(${camera.x}, ${camera.y})`
+})
+
 function update() {
   angle += level.orbitSpeed
-  anchorIsIce ? orbit(ice, fire) : orbit(fire, ice)
+
+  if (anchorIsIce) {
+    orbit(ice, fire)
+  } else {
+    orbit(fire, ice)
+  }
+
+  const target = anchorIsIce ? ice : fire
+
+  const targetX = VIEW_CENTER_X - target.x
+  const targetY = VIEW_CENTER_Y - target.y
+
+  camera.x += (targetX - camera.x) * 0.08
+  camera.y += (targetY - camera.y) * 0.08
 }
 
 function handle(e) {
-  if (!e.repeat && (e.code === 'Space' || e.type === 'mousedown')) {
+  if (
+    !e.repeat &&
+    (e.code === 'Space' || e.type === 'mousedown')
+  ) {
     pivot()
   }
 }
@@ -140,6 +176,9 @@ onMounted(() => {
 
   fire.x = ice.x + RADIUS
   fire.y = ice.y
+
+  camera.x = VIEW_CENTER_X - ice.x
+  camera.y = VIEW_CENTER_Y - ice.y
 
   gsap.ticker.add(update)
 
@@ -176,6 +215,7 @@ svg {
   font-size: 72px;
   font-weight: bold;
   color: white;
+  pointer-events: none;
 }
 
 .judge {
@@ -185,6 +225,7 @@ svg {
   transform: translateX(-50%);
   color: white;
   font-size: 24px;
+  pointer-events: none;
 }
 
 .score {
@@ -194,5 +235,6 @@ svg {
   transform: translateX(-50%);
   color: white;
   font-size: 24px;
+  pointer-events: none;
 }
 </style>
