@@ -29,33 +29,72 @@
 
     <div class="leaderboard">
       <h2>LEADERBOARD</h2>
-      <div class="scoreline">
-        <span>Player One</span>
-        <span>1000</span>
+
+      <div v-if="loadingLeaderboard">Loading...</div>
+
+      <div
+        v-for="(row, idx) in leaderboardEntries"
+        :key="row.user_id + '-' + row.created_at + '-' + idx"
+        class="scoreline"
+      >
+        <span>{{ row.user_id }}</span>
+        <span>{{ row.score }}</span>
       </div>
-      <div class="scoreline">
-        <span>Player Two</span>
-        <span>100</span>
-      </div>
+
+      <div v-if="!loadingLeaderboard && leaderboardEntries.length === 0">No scores yet.</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { supabase } from '@/lib/supabase'
+import { LEVELS } from '@/components/levels'
+
+const levels = Object.values(LEVELS)
 
 const selectedLevel = ref(null)
 
-const levels = [
-  { id: 1, name: 'Fortnite', desc: 'guy from fortnite', difficulty: 'Easy',      points: 1000, img: '/quandale.png' },
-  { id: 2, name: 'Guy',      desc: 'guy with hat',      difficulty: 'Medium',    points: 2000, img: '/lincoln.png'  },
-  { id: 3, name: 'Sheep',    desc: 'baaaa',             difficulty: 'Hard',      points: 3000, img: '/quandale.png' },
-  { id: 4, name: 'Ghost',    desc: 'booooo',            difficulty: 'Nightmare', points: 4000, img: '/quandale.png' },
-]
+const leaderboardEntries = ref([])
+const loadingLeaderboard = ref(false)
 
 function selectLevel(level) {
   selectedLevel.value = level
 }
+
+async function loadLeaderboardForLevel(levelId) {
+  if (!levelId) return
+
+  loadingLeaderboard.value = true
+
+  const { data, error } = await supabase
+    .from('leaderboard_scores')
+    .select('user_id, score, best_time_ms, created_at')
+    .eq('level_id', levelId)
+    .order('score', { ascending: false })
+    .limit(10)
+
+  if (error) {
+    console.error('Leaderboard load error:', error)
+    leaderboardEntries.value = []
+  } else {
+    leaderboardEntries.value = data || []
+  }
+
+  loadingLeaderboard.value = false
+}
+
+watch(selectedLevel, (lvl) => {
+  if (lvl) {
+    loadLeaderboardForLevel(lvl.id)
+  }
+})
+
+onMounted(() => {
+  if (levels.length > 0) {
+    selectLevel(levels[0])
+  }
+})
 </script>
 
 <style scoped>
