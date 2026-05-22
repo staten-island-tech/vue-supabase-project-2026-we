@@ -93,7 +93,8 @@ function pivot() {
     score.value += 50
     setJudge('Perfect +50')
   } else {
-    setJudge('Hit')
+    score.value += 30
+    setJudge('+30')
   }
 
   if (anchorIsIce) {
