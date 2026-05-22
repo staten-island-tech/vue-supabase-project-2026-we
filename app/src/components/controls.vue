@@ -1,9 +1,10 @@
 <template>
   <div class="game-container">
     <svg viewBox="0 0 1000 1000" width="100%" height="100%">
-
       <g :transform="cameraTransform">
-        <line v-for="(t, i) in tiles.slice(0, -1)"
+        <!-- PATH LINES -->
+        <line
+          v-for="(t, i) in tiles.slice(0, -1)"
           :key="'line-' + i"
           :x1="t.x"
           :y1="t.y"
@@ -13,7 +14,9 @@
           stroke-width="6"
         />
 
-        <circle v-for="(t, i) in tiles"
+        <!-- TILES -->
+        <circle
+          v-for="(t, i) in tiles"
           :key="'tile-' + i"
           :cx="t.x"
           :cy="t.y"
@@ -23,20 +26,36 @@
           stroke-width="4"
         />
 
+        <!-- ICE -->
         <circle :cx="ice.x" :cy="ice.y" r="18" fill="#00e5ff" />
+
+        <!-- FIRE -->
         <circle :cx="fire.x" :cy="fire.y" r="18" fill="#ff4d4d" />
       </g>
     </svg>
 
-    <div class="lvlname">{{ level.name }}</div>
-    <div class="judge">{{ judgement }}</div>
-    <div class="score">Score: {{ score }}</div>
+    <div class="lvlname">
+      {{ level.name }}
+    </div>
+
+    <div class="judge">
+      {{ judgement }}
+    </div>
+
+    <div class="score">Score: {{ gameStore.score }}</div>
+
+    <div class="combo">Combo: {{ gameStore.combo }}</div>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
+
 import gsap from 'gsap'
+
+import { useGameStore } from '@/stores/game'
+
+const gameStore = useGameStore()
 
 const props = defineProps({
   level: Object,
@@ -44,13 +63,19 @@ const props = defineProps({
 
 const level = props.level
 
-const ice = reactive({ x: 0, y: 0 })
-const fire = reactive({ x: 0, y: 0 })
+const ice = reactive({
+  x: 0,
+  y: 0,
+})
+
+const fire = reactive({
+  x: 0,
+  y: 0,
+})
 
 const tiles = reactive([])
 
 const judgement = ref('')
-const score = ref(0)
 
 let beat = 0
 let angle = 0
@@ -67,7 +92,9 @@ const Y = 500
 const VIEW_CENTER_X = 500
 const VIEW_CENTER_Y = 500
 
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+const distance = (a, b) => {
+  return Math.hypot(a.x - b.x, a.y - b.y)
+}
 
 const orbit = (a, b) => {
   b.x = a.x + RADIUS * Math.cos(angle)
@@ -87,34 +114,51 @@ function setJudge(text) {
 function pivot() {
   const next = tiles[beat + 1]
 
-  if (!next) return
+  if (!next) {
+    setJudge('LEVEL COMPLETE')
+
+    return
+  }
 
   const mover = anchorIsIce ? fire : ice
+
   const dist = distance(mover, next)
 
   if (dist > SNAP) {
-    setJudge('Miss')
+    setJudge('MISS')
+
+    gameStore.setCombo(0)
+
     return
   }
 
   beat++
+
   angle += Math.PI
 
   if (dist <= PERFECT) {
-    score.value += 50
-    setJudge('Perfect +50')
+    gameStore.addScore(50)
+
+    gameStore.setCombo(gameStore.combo + 1)
+
+    setJudge('PERFECT +50')
   } else {
-    score.value += 30
+    gameStore.addScore(30)
+
+    gameStore.setCombo(gameStore.combo + 1)
+
     setJudge('+30')
   }
 
   if (anchorIsIce) {
     fire.x = next.x
     fire.y = next.y
+
     orbit(fire, ice)
   } else {
     ice.x = next.x
     ice.y = next.y
+
     orbit(ice, fire)
   }
 
@@ -160,10 +204,7 @@ function update() {
 }
 
 function handle(e) {
-  if (
-    !e.repeat &&
-    (e.code === 'Space' || e.type === 'mousedown')
-  ) {
+  if (!e.repeat && (e.code === 'Space' || e.type === 'mousedown')) {
     pivot()
   }
 }
@@ -183,6 +224,7 @@ onMounted(() => {
   gsap.ticker.add(update)
 
   window.addEventListener('keydown', handle)
+
   window.addEventListener('mousedown', handle)
 })
 
@@ -190,6 +232,7 @@ onUnmounted(() => {
   gsap.ticker.remove(update)
 
   window.removeEventListener('keydown', handle)
+
   window.removeEventListener('mousedown', handle)
 })
 </script>
@@ -220,21 +263,33 @@ svg {
 
 .judge {
   position: fixed;
-  top: 110px;
+  top: 120px;
   left: 50%;
   transform: translateX(-50%);
   color: white;
-  font-size: 24px;
+  font-size: 28px;
+  font-weight: bold;
   pointer-events: none;
 }
 
 .score {
   position: fixed;
-  top: 150px;
+  top: 170px;
   left: 50%;
   transform: translateX(-50%);
   color: white;
+  font-size: 28px;
+  pointer-events: none;
+}
+
+.combo {
+  position: fixed;
+  top: 210px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #00e5ff;
   font-size: 24px;
+  font-weight: bold;
   pointer-events: none;
 }
 </style>

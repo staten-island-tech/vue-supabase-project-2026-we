@@ -2,8 +2,10 @@
   <div>
     <div class="lvlcontain">
       <h1>Song Selector</h1>
+
       <div class="levelcard" v-for="level in levels" :key="level.id" @click="selectLevel(level)">
         <img :src="level.img" />
+
         <div class="text">
           <h2>{{ level.name }}</h2>
           <p>{{ level.desc }}</p>
@@ -14,12 +16,25 @@
 
     <div class="playcard" v-if="selectedLevel">
       <p class="level">LEVEL</p>
+
       <h1>{{ selectedLevel.name }}</h1>
+
       <div class="difficulty">
-        <span class="easy">✦ {{ selectedLevel.difficulty.toUpperCase() }}</span>
-        <span class="score">{{ selectedLevel.points }} POINTS</span>
+        <span class="easy"> ✦ {{ selectedLevel.difficulty.toUpperCase() }} </span>
+
+        <span class="score"> {{ selectedLevel.points }} POINTS </span>
       </div>
-      <RouterLink :to="{ name: 'level', params: { id: selectedLevel.id } }">
+
+      <div class="gamescore">Current Score: {{ gameStore.score }}</div>
+
+      <div class="highscore">High Score: {{ gameStore.highScore }}</div>
+
+      <RouterLink
+        :to="{
+          name: 'level',
+          params: { id: selectedLevel.id },
+        }"
+      >
         <button class="playbtn">
           ▶ PLAY
           <p>START SESSION</p>
@@ -48,8 +63,13 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+
 import { supabase } from '@/lib/supabase'
 import { LEVELS } from '@/components/levels'
+
+import { useGameStore } from '@/stores/game'
+
+const gameStore = useGameStore()
 
 const levels = Object.values(LEVELS)
 
@@ -76,6 +96,7 @@ async function loadLeaderboardForLevel(levelId) {
 
   if (error) {
     console.error('Leaderboard load error:', error)
+
     leaderboardEntries.value = []
   } else {
     leaderboardEntries.value = data || []
@@ -125,6 +146,7 @@ onMounted(() => {
   padding: 15px;
   box-sizing: border-box;
   cursor: pointer;
+  transition: 0.2s;
 }
 
 .levelcard:hover {
@@ -146,10 +168,12 @@ onMounted(() => {
   flex-direction: column;
   justify-content: center;
 }
+
 .text h2 {
   margin: 0;
   font-size: 25px;
 }
+
 .text p {
   margin: 2px 0;
   font-size: 16px;
@@ -160,8 +184,8 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
 a:visited {
-  text-decoration: none;
   color: inherit;
 }
 
@@ -176,19 +200,28 @@ a:visited {
   color: white;
   width: 400px;
 }
+
 .playcard .level {
   opacity: 0.7;
   margin: 0;
 }
+
 .playcard h1 {
   margin: 5px 0 20px 0;
   font-size: 40px;
 }
+
 .difficulty {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+}
+
+.gamescore,
+.highscore {
+  margin-bottom: 10px;
+  font-size: 20px;
 }
 
 .playbtn {
@@ -202,9 +235,11 @@ a:visited {
   cursor: pointer;
   transition: 0.2s;
 }
+
 .playbtn:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
 .playbtn p {
   font-size: 12px;
   margin: 5px 0 0 0;
@@ -221,9 +256,11 @@ a:visited {
   color: white;
   width: 350px;
 }
+
 .leaderboard h2 {
   margin-bottom: 20px;
 }
+
 .scoreline {
   display: flex;
   justify-content: space-between;
