@@ -17,7 +17,7 @@
       <h1>{{ selectedLevel.name }}</h1>
       <div class="difficulty">
         <span class="easy">✦ {{ selectedLevel.difficulty.toUpperCase() }}</span>
-        <span class="score">{{ selectedLevel.points }} POINTS</span>
+        <span class="score">MAX SCORE: {{ selectedLevel.beats * 50 }}</span>
       </div>
       <RouterLink :to="{ name: 'level', params: { id: selectedLevel.id } }">
         <button class="playbtn">
