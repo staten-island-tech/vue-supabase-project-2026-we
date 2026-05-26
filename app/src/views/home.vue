@@ -87,6 +87,16 @@ async function loadLeaderboardForLevel(levelId) {
 
   loadingLeaderboard.value = true
 
+  // validate UUID to avoid invalid input errors from Postgres
+  const isInteger = /^-?\d+$/.test(String(levelId))
+
+  if (!isInteger) {
+    console.warn('Skipping leaderboard query: levelId is not an integer:', levelId)
+    leaderboardEntries.value = []
+    loadingLeaderboard.value = false
+    return
+  }
+
   const { data, error } = await supabase
     .from('leaderboard_scores')
     .select('user_id, score, best_time_ms, created_at')
@@ -96,8 +106,46 @@ async function loadLeaderboardForLevel(levelId) {
 
   if (error) {
     console.error('Leaderboard load error:', error)
+    // ...existing code...
+    async function loadLeaderboardForLevel(levelId) {
+      if (!levelId) return
 
-    leaderboardEntries.value = []
+      loadingLeaderboard.value = true
+
+      // allow either UUID (old schema) or integer (int8) level_id
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          String(levelId),
+        )
+      const isInteger = /^-?\d+$/.test(String(levelId))
+
+      if (!isUuid && !isInteger) {
+        console.warn('Skipping leaderboard query: levelId is not a UUID or integer:', levelId)
+        leaderboardEntries.value = []
+        loadingLeaderboard.value = false
+        return
+      }
+
+      // cast integer ids to Number for int8 column queries
+      const queryValue = isInteger ? Number(levelId) : String(levelId)
+
+      const { data, error } = await supabase
+        .from('leaderboard_scores')
+        .select('user_id, score, best_time_ms, created_at')
+        .eq('level_id', queryValue)
+        .order('score', { ascending: false })
+        .limit(10)
+
+      if (error) {
+        console.error('Leaderboard load error:', error)
+        leaderboardEntries.value = []
+      } else {
+        leaderboardEntries.value = data || []
+      }
+
+      loadingLeaderboard.value = false
+    }
+    // ...existing code...    leaderboardEntries.value = []
   } else {
     leaderboardEntries.value = data || []
   }
