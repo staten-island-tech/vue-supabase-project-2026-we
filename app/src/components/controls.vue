@@ -44,178 +44,149 @@ const props = defineProps({
   level: Object,
 })
 
-const level = props.level
-
 const ice = reactive({ x: 0, y: 0 })
 const fire = reactive({ x: 0, y: 0 })
-
+const camera = reactive({ x: 0, y: 0 })
 const tiles = reactive([])
-
-const judgement = ref('')
 const score = ref(0)
+const judgement = ref('')
 
-let beat = 0
+let currentBeat = 0
 let angle = 0
-let anchorIsIce = true
+let iceIsAnchor = true
 
-const RADIUS = 150
-const SNAP = 45
-const PERFECT = 18
-
-const START_X = -340
-const SPACING = 150
-const Y = 500
-
-const VIEW_CENTER_X = 500
-const VIEW_CENTER_Y = 500
-
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
-
-const orbit = (a, b) => {
-  b.x = a.x + RADIUS * Math.cos(angle)
-  b.y = a.y + RADIUS * Math.sin(angle)
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y)
 }
 
-function setJudge(text) {
+function setPosition(target, x, y) {
+  target.x = x
+  target.y = y
+}
+
+const RADIUS = 150
+
+function orbit(anchor, mover) {
+  mover.x = anchor.x + Math.cos(angle) * RADIUS
+  mover.y = anchor.y + Math.sin(angle) * RADIUS
+}
+
+function showJudgement(text, duration = 400) {
   judgement.value = text
 
   setTimeout(() => {
     if (judgement.value === text) {
       judgement.value = ''
     }
-  }, 400)
-}
-
-function resetGame() {
-  beat = 0
-  angle = 0
-  anchorIsIce = true
-  score.value = 0
-
-  generateTiles()
-
-  ice.x = tiles[0].x
-  ice.y = tiles[0].y
-
-  fire.x = ice.x + RADIUS
-  fire.y = ice.y
-
-  camera.x = VIEW_CENTER_X - ice.x
-  camera.y = VIEW_CENTER_Y - ice.y
-
-  judgement.value = 'You missed!'
-  setTimeout(() => {
-    judgement.value = ''
-  }, 600)
-}
-
-function pivot() {
-  const next = tiles[beat + 1]
-
-  if (!next) return
-
-  const mover = anchorIsIce ? fire : ice
-  const dist = distance(mover, next)
-
-  if (dist > SNAP) {
-    resetGame()
-    return
-  }
-
-  beat++
-  angle += Math.PI
-
-  if (dist <= PERFECT) {
-    score.value += 50
-    setJudge('Perfect +50')
-  } else {
-    score.value += 30
-    setJudge('+30')
-  }
-
-  if (anchorIsIce) {
-    fire.x = next.x
-    fire.y = next.y
-    orbit(fire, ice)
-  } else {
-    ice.x = next.x
-    ice.y = next.y
-    orbit(ice, fire)
-  }
-
-  anchorIsIce = !anchorIsIce
+  }, duration)
 }
 
 function generateTiles() {
   tiles.length = 0
 
-  for (let i = 0; i < level.beats; i++) {
+  for (let i = 0; i < props.level.beats; i++) {
     tiles.push({
-      x: START_X + i * SPACING,
-      y: Y,
+      x: -340 + i * 150,
+      y: 500,
     })
   }
 }
 
-const camera = reactive({
-  x: 0,
-  y: 0,
-})
+function setupGame() {
+  generateTiles()
+
+  const start = tiles[0]
+
+  setPosition(ice, start.x, start.y)
+  setPosition(fire, start.x + RADIUS, start.y)
+}
+
+function resetGame() {
+  currentBeat = 0
+  angle = 0
+  iceIsAnchor = true
+  score.value = 0
+
+  setupGame()
+
+  showJudgement('You missed!')
+}
+
+function getAnchor() {
+  return iceIsAnchor ? ice : fire
+}
+
+function getMover() {
+  return iceIsAnchor ? fire : ice
+}
+
+function pivot() {
+  const nextTile = tiles[currentBeat + 1]
+
+  if (!nextTile) return
+
+  const mover = getMover()
+  const hitDistance = distance(mover, nextTile)
+
+  if (hitDistance > 45) {
+    resetGame()
+    return
+  }
+
+  currentBeat++
+  angle += Math.PI
+
+  const perfect = hitDistance <= 18
+
+  score.value += perfect ? 50 : 30
+  showJudgement(perfect ? 'Perfect +50' : '+30')
+
+  setPosition(mover, nextTile.x, nextTile.y)
+
+  orbit(mover, getAnchor())
+
+  iceIsAnchor = !iceIsAnchor
+}
+
+function update() {
+  angle += props.level.orbitSpeed
+
+  orbit(getAnchor(), getMover())
+
+  const focus = getAnchor()
+
+  camera.x += (500 - focus.x - camera.x) * 0.08
+  camera.y += (500 - focus.y - camera.y) * 0.08
+}
+
+function handleInput(event) {
+  const pressed =
+    event.type === 'mousedown' ||
+    (event.code === 'Space' && !event.repeat)
+
+  if (pressed) {
+    pivot()
+  }
+}
 
 const cameraTransform = computed(() => {
   return `translate(${camera.x}, ${camera.y})`
 })
 
-function update() {
-  angle += level.orbitSpeed
-
-  if (anchorIsIce) {
-    orbit(ice, fire)
-  } else {
-    orbit(fire, ice)
-  }
-
-  const target = anchorIsIce ? ice : fire
-
-  const targetX = VIEW_CENTER_X - target.x
-  const targetY = VIEW_CENTER_Y - target.y
-
-  camera.x += (targetX - camera.x) * 0.08
-  camera.y += (targetY - camera.y) * 0.08
-}
-
-function handle(e) {
-  if (
-    !e.repeat &&
-    (e.code === 'Space' || e.type === 'mousedown')
-  ) {
-    pivot()
-  }
-}
-
 onMounted(() => {
-  generateTiles()
-
-  ice.x = tiles[0].x
-  ice.y = tiles[0].y
-
-  fire.x = ice.x + RADIUS
-  fire.y = ice.y
-
-  camera.x = VIEW_CENTER_X - ice.x
-  camera.y = VIEW_CENTER_Y - ice.y
+  setupGame()
 
   gsap.ticker.add(update)
 
-  window.addEventListener('keydown', handle)
-  window.addEventListener('mousedown', handle)
+  window.addEventListener('keydown', handleInput)
+  window.addEventListener('mousedown', handleInput)
 })
 
 onUnmounted(() => {
   gsap.ticker.remove(update)
 
-  window.removeEventListener('keydown', handle)
-  window.removeEventListener('mousedown', handle)
+  window.removeEventListener('keydown', handleInput)
+  window.removeEventListener('mousedown', handleInput)
 })
 </script>
 
@@ -232,35 +203,30 @@ svg {
   height: 100%;
 }
 
-.lvlname {
+.lvlname,
+.judge,
+.score {
   position: fixed;
-  top: 30px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 72px;
-  font-weight: bold;
   color: white;
   pointer-events: none;
+}
+
+.lvlname {
+  top: 30px;
+  font-size: 72px;
+  font-weight: bold;
 }
 
 .judge {
-  position: fixed;
   top: 110px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: white;
   font-size: 24px;
-  pointer-events: none;
 }
 
 .score {
-  position: fixed;
   top: 150px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: white;
   font-size: 24px;
-  pointer-events: none;
 }
 
 .back {
