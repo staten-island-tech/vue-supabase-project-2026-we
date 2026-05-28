@@ -1,9 +1,9 @@
 <template>
   <div class="game-container">
     <svg viewBox="0 0 1000 1000" width="100%" height="100%">
-
       <g :transform="cameraTransform">
-        <line v-for="(t, i) in tiles.slice(0, -1)"
+        <line
+          v-for="(t, i) in tiles.slice(0, -1)"
           :key="'line-' + i"
           :x1="t.x"
           :y1="t.y"
@@ -13,7 +13,8 @@
           stroke-width="6"
         />
 
-        <circle v-for="(t, i) in tiles"
+        <circle
+          v-for="(t, i) in tiles"
           :key="'tile-' + i"
           :cx="t.x"
           :cy="t.y"
@@ -31,9 +32,27 @@
     <div class="lvlname">{{ level.name }}</div>
     <div class="judge">{{ judgement }}</div>
     <div class="score">Score: {{ score }}</div>
+
+    <div v-if="finished" class="end-screen">
+      <div class="end-card">
+        <h1>Level Completed!</h1>
+
+        <p class="final-score">Final Score: {{ score }}</p>
+
+        <div class="end-buttons">
+          <button @click="resetGame">Replay</button>
+
+          <RouterLink to="/menu">
+            <button>Back to Menu</button>
+          </RouterLink>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <RouterLink to="/menu"><button class="back">Back to Menu</button></RouterLink>
+  <RouterLink v-if="!finished" to="/menu">
+    <button class="back">Back to Menu</button>
+  </RouterLink>
 </template>
 
 <script setup>
@@ -48,13 +67,14 @@ const ice = reactive({ x: 0, y: 0 })
 const fire = reactive({ x: 0, y: 0 })
 const camera = reactive({ x: 0, y: 0 })
 const tiles = reactive([])
+
 const score = ref(0)
 const judgement = ref('')
+const finished = ref(false)
 
 let currentBeat = 0
 let angle = 0
 let iceIsAnchor = true
-let finished = false
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y)
@@ -103,6 +123,8 @@ function setupGame() {
 }
 
 function resetGame() {
+  finished.value = false
+
   currentBeat = 0
   angle = 0
   iceIsAnchor = true
@@ -121,13 +143,12 @@ function getMover() {
   return iceIsAnchor ? fire : ice
 }
 
-function endScreen(){
-  finished = true
+function endScreen() {
+  finished.value = true
   showJudgement('Level Complete!')
 }
 
 function pivot() {
-
   const nextTile = tiles[currentBeat + 1]
 
   const mover = getMover()
@@ -155,10 +176,12 @@ function pivot() {
   if (currentBeat >= tiles.length - 1) {
     endScreen()
     return
-    }
+  }
 }
 
 function update() {
+  if (finished.value) return
+
   angle += props.level.orbitSpeed
 
   orbit(getAnchor(), getMover())
@@ -170,6 +193,8 @@ function update() {
 }
 
 function handleInput(event) {
+  if (finished.value) return
+
   const pressed =
     event.type === 'mousedown' ||
     (event.code === 'Space' && !event.repeat)
@@ -243,14 +268,64 @@ svg {
   position: fixed;
   top: 20px;
   left: 20px;
-
-  background-color: rgb(255, 255, 255);
-  color: rgb(0, 0, 0);
+  background-color: white;
+  color: black;
   border: none;
   padding: 10px 20px;
   text-align: center;
   font-size: 20px;
   cursor: pointer;
   border-radius: 8px;
+}
+
+.end-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+}
+
+.end-card {
+  background: #1e1e1e;
+  padding: 40px;
+  border-radius: 16px;
+  min-width: 350px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.end-card h1 {
+  font-size: 42px;
+  margin-bottom: 16px;
+}
+
+.final-score {
+  font-size: 24px;
+  margin-bottom: 28px;
+}
+
+.end-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.end-buttons button {
+  background: white;
+  color: black;
+  border: none;
+  padding: 12px 24px;
+  font-size: 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.end-buttons button:hover {
+  transform: scale(1.05);
 }
 </style>
