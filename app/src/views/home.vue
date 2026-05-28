@@ -2,10 +2,8 @@
   <div>
     <div class="lvlcontain">
       <h1>Song Selector</h1>
-
       <div class="levelcard" v-for="level in levels" :key="level.id" @click="selectLevel(level)">
         <img :src="level.img" />
-
         <div class="text">
           <h2>{{ level.name }}</h2>
           <p>{{ level.desc }}</p>
@@ -16,24 +14,12 @@
 
     <div class="playcard" v-if="selectedLevel">
       <p class="level">LEVEL</p>
-
       <h1>{{ selectedLevel.name }}</h1>
-
       <div class="difficulty">
         <span class="easy">✦ {{ selectedLevel.difficulty.toUpperCase() }}</span>
         <span class="score">MAX SCORE: {{ selectedLevel.beats * 50 }}</span>
       </div>
-
-      <div class="gamescore">Current Score: {{ gameStore.score }}</div>
-
-      <div class="highscore">High Score: {{ gameStore.highScore }}</div>
-
-      <RouterLink
-        :to="{
-          name: 'level',
-          params: { id: selectedLevel.id },
-        }"
-      >
+      <RouterLink :to="{ name: 'level', params: { id: selectedLevel.id } }">
         <button class="playbtn">
           ▶ PLAY
           <p>START SESSION</p>
@@ -62,13 +48,8 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-
 import { supabase } from '@/lib/supabase'
 import { LEVELS } from '@/components/levels'
-
-import { useGameStore } from '@/stores/game'
-
-const gameStore = useGameStore()
 
 const levels = Object.values(LEVELS)
 
@@ -86,16 +67,6 @@ async function loadLeaderboardForLevel(levelId) {
 
   loadingLeaderboard.value = true
 
-  // validate UUID to avoid invalid input errors from Postgres
-  const isInteger = /^-?\d+$/.test(String(levelId))
-
-  if (!isInteger) {
-    console.warn('Skipping leaderboard query: levelId is not an integer:', levelId)
-    leaderboardEntries.value = []
-    loadingLeaderboard.value = false
-    return
-  }
-
   const { data, error } = await supabase
     .from('leaderboard_scores')
     .select('user_id, score, best_time_ms, created_at')
@@ -105,46 +76,7 @@ async function loadLeaderboardForLevel(levelId) {
 
   if (error) {
     console.error('Leaderboard load error:', error)
-    // ...existing code...
-    async function loadLeaderboardForLevel(levelId) {
-      if (!levelId) return
-
-      loadingLeaderboard.value = true
-
-      // allow either UUID (old schema) or integer (int8) level_id
-      const isUuid =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-          String(levelId),
-        )
-      const isInteger = /^-?\d+$/.test(String(levelId))
-
-      if (!isUuid && !isInteger) {
-        console.warn('Skipping leaderboard query: levelId is not a UUID or integer:', levelId)
-        leaderboardEntries.value = []
-        loadingLeaderboard.value = false
-        return
-      }
-
-      // cast integer ids to Number for int8 column queries
-      const queryValue = isInteger ? Number(levelId) : String(levelId)
-
-      const { data, error } = await supabase
-        .from('leaderboard_scores')
-        .select('user_id, score, best_time_ms, created_at')
-        .eq('level_id', queryValue)
-        .order('score', { ascending: false })
-        .limit(10)
-
-      if (error) {
-        console.error('Leaderboard load error:', error)
-        leaderboardEntries.value = []
-      } else {
-        leaderboardEntries.value = data || []
-      }
-
-      loadingLeaderboard.value = false
-    }
-    // ...existing code...    leaderboardEntries.value = []
+    leaderboardEntries.value = []
   } else {
     leaderboardEntries.value = data || []
   }
@@ -193,7 +125,6 @@ onMounted(() => {
   padding: 15px;
   box-sizing: border-box;
   cursor: pointer;
-  transition: 0.2s;
 }
 
 .levelcard:hover {
@@ -215,12 +146,10 @@ onMounted(() => {
   flex-direction: column;
   justify-content: center;
 }
-
 .text h2 {
   margin: 0;
   font-size: 25px;
 }
-
 .text p {
   margin: 2px 0;
   font-size: 16px;
@@ -231,8 +160,8 @@ a {
   text-decoration: none;
   color: inherit;
 }
-
 a:visited {
+  text-decoration: none;
   color: inherit;
 }
 
@@ -247,28 +176,19 @@ a:visited {
   color: white;
   width: 400px;
 }
-
 .playcard .level {
   opacity: 0.7;
   margin: 0;
 }
-
 .playcard h1 {
   margin: 5px 0 20px 0;
   font-size: 40px;
 }
-
 .difficulty {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-}
-
-.gamescore,
-.highscore {
-  margin-bottom: 10px;
-  font-size: 20px;
+  margin-bottom: 30px;
 }
 
 .playbtn {
@@ -282,11 +202,9 @@ a:visited {
   cursor: pointer;
   transition: 0.2s;
 }
-
 .playbtn:hover {
   background: rgba(255, 255, 255, 0.25);
 }
-
 .playbtn p {
   font-size: 12px;
   margin: 5px 0 0 0;
@@ -303,11 +221,9 @@ a:visited {
   color: white;
   width: 350px;
 }
-
 .leaderboard h2 {
   margin-bottom: 20px;
 }
-
 .scoreline {
   display: flex;
   justify-content: space-between;
