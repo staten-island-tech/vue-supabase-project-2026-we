@@ -32,29 +32,45 @@
     <div class="lvlname">{{ level.name }}</div>
     <div class="judge">{{ judgement }}</div>
     <div class="score">Score: {{ score }}</div>
+
+    <div v-if="finished" class="end-screen">
+      <div class="end-card">
+        <h1>Level Completed!</h1>
+
+        <p class="final-score">Final Score: {{ score }}</p>
+
+        <div class="end-buttons">
+          <button @click="resetGame">Replay</button>
+
+          <RouterLink to="/menu">
+            <button>Back to Menu</button>
+          </RouterLink>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <RouterLink to="/menu"><button class="back">Back to Menu</button></RouterLink>
+  <RouterLink v-if="!finished" to="/menu">
+    <button class="back">Back to Menu</button>
+  </RouterLink>
 </template>
 
 <script setup>
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import gsap from 'gsap'
-import { useGameStore } from '@/stores/game'
 
 const props = defineProps({
   level: Object,
 })
 
-const emit = defineEmits(['stationaryOnLast'])
-
-const gameStore = useGameStore()
-
-const ice = reactive({ x: 0, y: 0, squareIndex: -1, isStationary: false, _emittedEnd: false })
-const fire = reactive({ x: 0, y: 0, squareIndex: -1, isStationary: false, _emittedEnd: false })
+const ice = reactive({ x: 0, y: 0 })
+const fire = reactive({ x: 0, y: 0 })
 const camera = reactive({ x: 0, y: 0 })
 const tiles = reactive([])
+
+const score = ref(0)
 const judgement = ref('')
+const finished = ref(false)
 
 let currentBeat = 0
 let angle = 0
@@ -67,10 +83,6 @@ function distance(a, b) {
 function setPosition(target, x, y) {
   target.x = x
   target.y = y
-  const idx = tiles.findIndex((t) => t.x === x && t.y === y)
-  target.squareIndex = idx >= 0 ? idx : -1
-  // reset emitted flag when placing
-  if (idx >= 0) target._emittedEnd = false
 }
 
 const RADIUS = 150
@@ -93,7 +105,7 @@ function showJudgement(text, duration = 400) {
 function generateTiles() {
   tiles.length = 0
 
-  for (let i = 0; i < (props.level?.beats ?? 0); i++) {
+  for (let i = 0; i < props.level.beats; i++) {
     tiles.push({
       x: -340 + i * 150,
       y: 500,
@@ -104,38 +116,19 @@ function generateTiles() {
 function setupGame() {
   generateTiles()
 
-  if (tiles.length === 0) return
-
   const start = tiles[0]
 
   setPosition(ice, start.x, start.y)
-  ice.squareIndex = 0
-  ice.isStationary = true
-  ice._emittedEnd = false
-
-  // fire starts off-tile; place at radius position and mark not stationary
   setPosition(fire, start.x + RADIUS, start.y)
-  fire.squareIndex = -1
-  fire.isStationary = false
-  fire._emittedEnd = false
-
-  camera.x = 0
-  camera.y = 0
-  currentBeat = 0
-  angle = 0
-  iceIsAnchor = true
-  // sync global store score if desired
-  if (typeof gameStore.resetGame === 'function') gameStore.resetGame()
-  else gameStore.score = 0
 }
 
 function resetGame() {
+  finished.value = false
+
   currentBeat = 0
   angle = 0
   iceIsAnchor = true
-  // reset store and local flags
-  if (typeof gameStore.resetGame === 'function') gameStore.resetGame()
-  else gameStore.score = 0
+  score.value = 0
 
   setupGame()
 
@@ -150,10 +143,13 @@ function getMover() {
   return iceIsAnchor ? fire : ice
 }
 
+function endScreen() {
+  finished.value = true
+  showJudgement('Level Complete!')
+}
+
 function pivot() {
   const nextTile = tiles[currentBeat + 1]
-
-  if (!nextTile) return
 
   const mover = getMover()
   const hitDistance = distance(mover, nextTile)
@@ -168,40 +164,26 @@ function pivot() {
 
   const perfect = hitDistance <= 18
 
-  const delta = perfect ? 50 : 30
-  // update global score
-  gameStore.score = (gameStore.score || 0) + delta
+  score.value += perfect ? 50 : 30
   showJudgement(perfect ? 'Perfect +50' : '+30')
 
-  // place mover onto the tile and record its index
   setPosition(mover, nextTile.x, nextTile.y)
-  mover.squareIndex = currentBeat
 
-  // after placing, the mover will orbit the current anchor, then we flip anchors
   orbit(mover, getAnchor())
 
-  // flip anchor
   iceIsAnchor = !iceIsAnchor
 
-  // update stationary flags: new anchor should be stationary, mover becomes mover (not stationary)
-  const anchor = getAnchor()
-  const other = getMover()
-  anchor.isStationary = true
-  other.isStationary = false
-
-  // detect end only for stationary anchor and emit once
-  const lastIdx = (tiles?.length ?? 0) - 1
-  if (anchor.squareIndex === lastIdx && !anchor._emittedEnd) {
-    anchor._emittedEnd = true
-    emit('stationaryOnLast', { ball: anchor })
+  if (currentBeat >= tiles.length - 1) {
+    endScreen()
+    return
   }
 }
 
 function update() {
-  // advance orbital angle for moving ball
-  angle += props.level?.orbitSpeed ?? 0
+  if (finished.value) return
 
-  // perform orbit update
+  angle += props.level.orbitSpeed
+
   orbit(getAnchor(), getMover())
 
   const focus = getAnchor()
@@ -211,10 +193,13 @@ function update() {
 }
 
 function handleInput(event) {
-  const isMouse = event.type === 'mousedown'
-  const isSpace = event.type === 'keydown' && event.code === 'Space' && !event.repeat
+  if (finished.value) return
 
-  if (isMouse || isSpace) {
+  const pressed =
+    event.type === 'mousedown' ||
+    (event.code === 'Space' && !event.repeat)
+
+  if (pressed) {
     pivot()
   }
 }
@@ -222,8 +207,6 @@ function handleInput(event) {
 const cameraTransform = computed(() => {
   return `translate(${camera.x}, ${camera.y})`
 })
-
-const score = computed(() => gameStore.score ?? 0)
 
 onMounted(() => {
   setupGame()
@@ -285,14 +268,64 @@ svg {
   position: fixed;
   top: 20px;
   left: 20px;
-
-  background-color: rgb(255, 255, 255);
-  color: rgb(0, 0, 0);
+  background-color: white;
+  color: black;
   border: none;
   padding: 10px 20px;
   text-align: center;
   font-size: 20px;
   cursor: pointer;
   border-radius: 8px;
+}
+
+.end-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+}
+
+.end-card {
+  background: #1e1e1e;
+  padding: 40px;
+  border-radius: 16px;
+  min-width: 350px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.end-card h1 {
+  font-size: 42px;
+  margin-bottom: 16px;
+}
+
+.final-score {
+  font-size: 24px;
+  margin-bottom: 28px;
+}
+
+.end-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.end-buttons button {
+  background: white;
+  color: black;
+  border: none;
+  padding: 12px 24px;
+  font-size: 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.end-buttons button:hover {
+  transform: scale(1.05);
 }
 </style>
