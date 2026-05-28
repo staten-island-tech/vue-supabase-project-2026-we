@@ -38,8 +38,9 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import gsap from 'gsap'
+import { useGameStore } from '@/stores/game'
 
 const props = defineProps({
   level: Object,
@@ -47,11 +48,12 @@ const props = defineProps({
 
 const emit = defineEmits(['stationaryOnLast'])
 
-const ice = reactive({ x: 0, y: 0 })
-const fire = reactive({ x: 0, y: 0 })
+const gameStore = useGameStore()
+
+const ice = reactive({ x: 0, y: 0, squareIndex: -1, isStationary: false, _emittedEnd: false })
+const fire = reactive({ x: 0, y: 0, squareIndex: -1, isStationary: false, _emittedEnd: false })
 const camera = reactive({ x: 0, y: 0 })
 const tiles = reactive([])
-const score = ref(0)
 const judgement = ref('')
 
 let currentBeat = 0
@@ -65,10 +67,10 @@ function distance(a, b) {
 function setPosition(target, x, y) {
   target.x = x
   target.y = y
-  // set square index if we placed the ball on a tile (find tile by coords)
-  // this keeps track of which tile the ball is currently occupying
   const idx = tiles.findIndex((t) => t.x === x && t.y === y)
   target.squareIndex = idx >= 0 ? idx : -1
+  // reset emitted flag when placing
+  if (idx >= 0) target._emittedEnd = false
 }
 
 const RADIUS = 150
@@ -91,7 +93,7 @@ function showJudgement(text, duration = 400) {
 function generateTiles() {
   tiles.length = 0
 
-  for (let i = 0; i < props.level.beats; i++) {
+  for (let i = 0; i < (props.level?.beats ?? 0); i++) {
     tiles.push({
       x: -340 + i * 150,
       y: 500,
@@ -102,20 +104,38 @@ function generateTiles() {
 function setupGame() {
   generateTiles()
 
+  if (tiles.length === 0) return
+
   const start = tiles[0]
 
   setPosition(ice, start.x, start.y)
   ice.squareIndex = 0
-  // fire starts off-tile; mark -1 to indicate not on any tile yet
+  ice.isStationary = true
+  ice._emittedEnd = false
+
+  // fire starts off-tile; place at radius position and mark not stationary
   setPosition(fire, start.x + RADIUS, start.y)
   fire.squareIndex = -1
+  fire.isStationary = false
+  fire._emittedEnd = false
+
+  camera.x = 0
+  camera.y = 0
+  currentBeat = 0
+  angle = 0
+  iceIsAnchor = true
+  // sync global store score if desired
+  if (typeof gameStore.resetGame === 'function') gameStore.resetGame()
+  else gameStore.score = 0
 }
 
 function resetGame() {
   currentBeat = 0
   angle = 0
   iceIsAnchor = true
-  score.value = 0
+  // reset store and local flags
+  if (typeof gameStore.resetGame === 'function') gameStore.resetGame()
+  else gameStore.score = 0
 
   setupGame()
 
@@ -148,28 +168,40 @@ function pivot() {
 
   const perfect = hitDistance <= 18
 
-  score.value += perfect ? 50 : 30
+  const delta = perfect ? 50 : 30
+  // update global score
+  gameStore.score = (gameStore.score || 0) + delta
   showJudgement(perfect ? 'Perfect +50' : '+30')
 
   // place mover onto the tile and record its index
   setPosition(mover, nextTile.x, nextTile.y)
   mover.squareIndex = currentBeat
 
+  // after placing, the mover will orbit the current anchor, then we flip anchors
   orbit(mover, getAnchor())
 
+  // flip anchor
   iceIsAnchor = !iceIsAnchor
 
-  // now the former mover is the new anchor (stationary). detect end only for anchor.
+  // update stationary flags: new anchor should be stationary, mover becomes mover (not stationary)
   const anchor = getAnchor()
-  if (anchor.squareIndex === lastIndex.value && !anchor._emittedEnd) {
+  const other = getMover()
+  anchor.isStationary = true
+  other.isStationary = false
+
+  // detect end only for stationary anchor and emit once
+  const lastIdx = (tiles?.length ?? 0) - 1
+  if (anchor.squareIndex === lastIdx && !anchor._emittedEnd) {
     anchor._emittedEnd = true
     emit('stationaryOnLast', { ball: anchor })
   }
 }
 
 function update() {
-  angle += props.level.orbitSpeed
+  // advance orbital angle for moving ball
+  angle += props.level?.orbitSpeed ?? 0
 
+  // perform orbit update
   orbit(getAnchor(), getMover())
 
   const focus = getAnchor()
@@ -179,9 +211,10 @@ function update() {
 }
 
 function handleInput(event) {
-  const pressed = event.type === 'mousedown' || (event.code === 'Space' && !event.repeat)
+  const isMouse = event.type === 'mousedown'
+  const isSpace = event.type === 'keydown' && event.code === 'Space' && !event.repeat
 
-  if (pressed) {
+  if (isMouse || isSpace) {
     pivot()
   }
 }
@@ -190,50 +223,7 @@ const cameraTransform = computed(() => {
   return `translate(${camera.x}, ${camera.y})`
 })
 
-const lastIndex = computed(() => (tiles?.length ?? 0) - 1)
-
-// Option A — prefer explicit flag set when ball stops
-function isStationaryOnLast(ball) {
-  if (!ball) return false
-  // your ball object should set `ball.isStationary = true` when it stops
-  return ball.squareIndex === lastIndex.value && !!ball.isStationary
-}
-
-// Option B — heuristic: low linear velocity AND not currently rotating
-function isStationaryOnLastByHeuristic(ball) {
-  if (!ball) return false
-  const onLast = ball.squareIndex === lastIndex.value
-  const vx = ball.vx ?? 0
-  const vy = ball.vy ?? 0
-  const speed = Math.hypot(vx, vy)
-  const ROTATION_THRESHOLD = 0.02 // adjust to your game's units
-  const speedOk = speed < 0.02
-  const notRotating =
-    !ball.isRotating && !(Math.abs(ball.angularVelocity ?? 0) > ROTATION_THRESHOLD)
-  return onLast && speedOk && notRotating
-}
-
-// Watch the stationaryBall (preferred) and emit once when it becomes on-last
-watch(
-  () => ice && ice.squareIndex,
-  (newIdx, oldIdx) => {
-    const ball = ice
-    if (!ball) return
-    if (isStationaryOnLast(ball)) {
-      emit('stationaryOnLast', { ball })
-    } else if (isStationaryOnLastByHeuristic(ball)) {
-      // fallback if you don't explicitly toggle isStationary
-      emit('stationaryOnLast', { ball, heuristic: true })
-    }
-  },
-)
-
-// If your code marks the ball stationary in a function, you can call check there:
-function checkStationaryOnLast(ball) {
-  if (isStationaryOnLast(ball) || isStationaryOnLastByHeuristic(ball)) {
-    emit('stationaryOnLast', { ball })
-  }
-}
+const score = computed(() => gameStore.score ?? 0)
 
 onMounted(() => {
   setupGame()
