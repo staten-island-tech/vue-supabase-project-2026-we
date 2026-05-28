@@ -55,3 +55,6 @@ Or change leaderboard_scores.level_id in Postgres to an integer (or add a numeri
 Example: change LEVELS to use UUIDs (components/levels.js):
 
 Apply the quick fix now to stop the runtime error, then pick the long-term fix that matches your data model.
+
+<!-- is there a way to detect wheter the ball is on the last square, and specifically when the stationary ball is on the last square and not when the rotating ball
+ -->
