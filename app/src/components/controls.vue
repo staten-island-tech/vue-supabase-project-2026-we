@@ -54,6 +54,7 @@ const judgement = ref('')
 let currentBeat = 0
 let angle = 0
 let iceIsAnchor = true
+let finished = false
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y)
@@ -120,10 +121,14 @@ function getMover() {
   return iceIsAnchor ? fire : ice
 }
 
-function pivot() {
-  const nextTile = tiles[currentBeat + 1]
+function endScreen(){
+  finished = true
+  showJudgement('Level Complete!')
+}
 
-  if (!nextTile) return
+function pivot() {
+
+  const nextTile = tiles[currentBeat + 1]
 
   const mover = getMover()
   const hitDistance = distance(mover, nextTile)
@@ -146,6 +151,11 @@ function pivot() {
   orbit(mover, getAnchor())
 
   iceIsAnchor = !iceIsAnchor
+
+  if (currentBeat >= tiles.length - 1) {
+    endScreen()
+    return
+    }
 }
 
 function update() {
