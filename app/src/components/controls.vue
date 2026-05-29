@@ -63,6 +63,9 @@ const props = defineProps({
   level: Object,
 })
 
+// add this to declare the custom event
+const emit = defineEmits(['stationaryOnLast'])
+
 const ice = reactive({ x: 0, y: 0 })
 const fire = reactive({ x: 0, y: 0 })
 const camera = reactive({ x: 0, y: 0 })
@@ -174,6 +177,8 @@ function pivot() {
   iceIsAnchor = !iceIsAnchor
 
   if (currentBeat >= tiles.length - 1) {
+    // emit the event so parent can save / show leaderboard
+    emit('stationaryOnLast', { score: score.value })
     endScreen()
     return
   }
@@ -195,9 +200,7 @@ function update() {
 function handleInput(event) {
   if (finished.value) return
 
-  const pressed =
-    event.type === 'mousedown' ||
-    (event.code === 'Space' && !event.repeat)
+  const pressed = event.type === 'mousedown' || (event.code === 'Space' && !event.repeat)
 
   if (pressed) {
     pivot()

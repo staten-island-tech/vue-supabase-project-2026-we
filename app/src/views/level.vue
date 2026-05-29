@@ -35,14 +35,17 @@ async function onLevelComplete(evt) {
     const rawId = level.value?.id
     const levelId = /^-?\d+$/.test(String(rawId)) ? Number(rawId) : String(rawId)
 
+    // event from Controls should include the final score
+    const emittedScore = evt?.score ?? null
+    const scoreToSave = emittedScore ?? gameStore.score ?? 0
+
     // get current user id if available (supports both v1/v2 supabase APIs)
     let userId = null
     try {
-      const getUser = supabase.auth.getUser
-      if (getUser) {
+      if (supabase.auth.getUser) {
         const { data } = await supabase.auth.getUser()
         userId = data?.user?.id ?? null
-      } else if (supabase.auth.user) {
+      } else if (typeof supabase.auth.user === 'function') {
         const u = supabase.auth.user()
         userId = u?.id ?? null
       }
@@ -53,16 +56,17 @@ async function onLevelComplete(evt) {
     const payload = {
       user_id: userId,
       level_id: levelId,
-      score: gameStore.score,
-      best_time_ms: null,
+      score: scoreToSave,
+      // best_time removed
     }
 
-    const { data, error } = await supabase.from('leaderboard_scores').insert([payload]).select() // request the inserted rows; without this `data` can be null
+    // request inserted rows so `data` is populated
+    const { data, error } = await supabase.from('leaderboard_scores').insert([payload]).select()
     if (error) {
       console.error('Failed to save leaderboard entry:', error)
     } else {
       console.log('Saved leaderboard entry:', data)
-      // notify other views to refresh leaderboard for this level
+      // notify home to refresh leaderboard
       window.dispatchEvent(new CustomEvent('leaderboard-updated', { detail: { levelId } }))
     }
   } catch (err) {

@@ -34,10 +34,10 @@
 
       <div
         v-for="(row, idx) in leaderboardEntries"
-        :key="row.user_id + '-' + row.created_at + '-' + idx"
+        :key="row.user_id + '-' + idx"
         class="scoreline"
       >
-        <span>{{ row.user_id }}</span>
+        <span>{{ row.username || row.user_id }}</span>
         <span>{{ row.score }}</span>
       </div>
 
@@ -47,10 +47,9 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { LEVELS } from '@/components/levels'
-
 const levels = Object.values(LEVELS)
 
 const selectedLevel = ref(null)
@@ -67,19 +66,44 @@ async function loadLeaderboardForLevel(levelId) {
 
   loadingLeaderboard.value = true
 
-  const { data, error } = await supabase
+  // fetch leaderboard rows first (no server-side join)
+  const { data: rows, error: rowsError } = await supabase
     .from('leaderboard_scores')
-    .select('user_id, score, best_time_ms, created_at')
+    .select('user_id, score')
     .eq('level_id', levelId)
     .order('score', { ascending: false })
     .limit(10)
 
-  if (error) {
-    console.error('Leaderboard load error:', error)
+  if (rowsError) {
+    console.error('Leaderboard load error:', rowsError)
     leaderboardEntries.value = []
-  } else {
-    leaderboardEntries.value = data || []
+    loadingLeaderboard.value = false
+    return
   }
+
+  const distinctIds = Array.from(new Set((rows || []).map((r) => r.user_id).filter(Boolean)))
+
+  let profilesMap = {}
+  if (distinctIds.length > 0) {
+    // fetch usernames for the user ids we need
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', distinctIds)
+
+    if (profilesError) {
+      // could be RLS or permission issue -- fallback to showing UUIDs
+      console.warn('Could not load profiles:', profilesError)
+    } else {
+      profilesMap = Object.fromEntries((profiles || []).map((p) => [String(p.id), p.username]))
+    }
+  }
+
+  // merge username into leaderboard rows for the UI
+  leaderboardEntries.value = (rows || []).map((r) => ({
+    ...r,
+    username: profilesMap[String(r.user_id)] || null,
+  }))
 
   loadingLeaderboard.value = false
 }
@@ -90,9 +114,24 @@ watch(selectedLevel, (lvl) => {
   }
 })
 
+let leaderboardUpdatedHandler = null
+
 onMounted(() => {
   if (levels.length > 0) {
     selectLevel(levels[0])
+  }
+
+  leaderboardUpdatedHandler = (e) => {
+    const lvl = selectedLevel.value
+    if (lvl) loadLeaderboardForLevel(lvl.id)
+  }
+  window.addEventListener('leaderboard-updated', leaderboardUpdatedHandler)
+})
+
+onUnmounted(() => {
+  if (leaderboardUpdatedHandler) {
+    window.removeEventListener('leaderboard-updated', leaderboardUpdatedHandler)
+    leaderboardUpdatedHandler = null
   }
 })
 </script>
