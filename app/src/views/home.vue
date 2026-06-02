@@ -30,108 +30,89 @@
     <div class="leaderboard">
       <h2>LEADERBOARD</h2>
 
-      <div v-if="loadingLeaderboard">Loading...</div>
+      <div v-if="gameStore.leaderboardLoading">Loading...</div>
+      <div v-else>
+        <div
+          v-for="(row, idx) in leaderboardDisplayRows"
+          :key="row.id ?? row.user_id + '-' + idx"
+          class="scoreline"
+        >
+          <span>{{ row.displayName }}</span>
+          <span>{{ row.score }}</span>
+          <button v-if="row.id" @click="handleDeleteScore(row.id)">Delete</button>
+          <button
+            v-if="row.id && row.user_id === gameStore.currentUser?.id"
+            @click="handleBonusScore(row)"
+          >
+            +5 Bonus
+          </button>
+        </div>
 
-      <div
-        v-for="(row, idx) in leaderboardEntries"
-        :key="row.user_id + '-' + idx"
-        class="scoreline"
-      >
-        <span>{{ row.username || row.user_id }}</span>
-        <span>{{ row.score }}</span>
+        <div v-if="!gameStore.leaderboardLoading && leaderboardDisplayRows.length === 0">
+          No scores yet.
+        </div>
       </div>
 
-      <div v-if="!loadingLeaderboard && leaderboardEntries.length === 0">No scores yet.</div>
+      <div v-if="gameStore.leaderboardError" class="error">
+        {{ gameStore.leaderboardError }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { supabase } from '@/lib/supabase'
+import { computed, onMounted, watch } from 'vue'
+import { useGameStore } from '@/stores/game'
 import { LEVELS } from '@/components/levels'
+
 const levels = Object.values(LEVELS)
+const gameStore = useGameStore()
 
-const selectedLevel = ref(null)
+const selectedLevel = computed(() =>
+  levels.find((level) => String(level.id) === String(gameStore.selectedLevelId)),
+)
 
-const leaderboardEntries = ref([])
-const loadingLeaderboard = ref(false)
+const leaderboardDisplayRows = computed(() =>
+  gameStore.leaderboardEntries.map((row) => ({
+    ...row,
+    displayName: row.displayName ?? String(row.user_id ?? 'Guest'),
+  })),
+)
 
 function selectLevel(level) {
-  selectedLevel.value = level
+  gameStore.setSelectedLevel(level.id)
+  gameStore.loadLeaderboard(level.id)
 }
 
-async function loadLeaderboardForLevel(levelId) {
-  if (!levelId) return
+function handleDeleteScore(scoreId) {
+  gameStore.deleteScoreEntry(scoreId)
+}
 
-  loadingLeaderboard.value = true
+function handleBonusScore(row) {
+  const updatedScore = Number(row.score) + 5
+  gameStore.updateScoreEntry(row.id, updatedScore)
+}
 
-  // fetch leaderboard rows first (no server-side join)
-  const { data: rows, error: rowsError } = await supabase
-    .from('leaderboard_scores')
-    .select('user_id, score')
-    .eq('level_id', levelId)
-    .order('score', { ascending: false })
-    .limit(10)
+const myScores = computed(() =>
+  gameStore.leaderboardEntries.filter((row) => row.user_id === gameStore.currentUser?.id),
+)
 
-  if (rowsError) {
-    console.error('Leaderboard load error:', rowsError)
-    leaderboardEntries.value = []
-    loadingLeaderboard.value = false
-    return
-  }
-
-  const distinctIds = Array.from(new Set((rows || []).map((r) => r.user_id).filter(Boolean)))
-
-  let profilesMap = {}
-  if (distinctIds.length > 0) {
-    // fetch usernames for the user ids we need
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, username')
-      .in('id', distinctIds)
-
-    if (profilesError) {
-      // could be RLS or permission issue -- fallback to showing UUIDs
-      console.warn('Could not load profiles:', profilesError)
-    } else {
-      profilesMap = Object.fromEntries((profiles || []).map((p) => [String(p.id), p.username]))
+watch(
+  () => gameStore.selectedLevelId,
+  (levelId) => {
+    if (levelId) {
+      gameStore.loadLeaderboard(levelId)
     }
-  }
-
-  // merge username into leaderboard rows for the UI
-  leaderboardEntries.value = (rows || []).map((r) => ({
-    ...r,
-    username: profilesMap[String(r.user_id)] || null,
-  }))
-
-  loadingLeaderboard.value = false
-}
-
-watch(selectedLevel, (lvl) => {
-  if (lvl) {
-    loadLeaderboardForLevel(lvl.id)
-  }
-})
-
-let leaderboardUpdatedHandler = null
+  },
+)
 
 onMounted(() => {
   if (levels.length > 0) {
     selectLevel(levels[0])
   }
 
-  leaderboardUpdatedHandler = (e) => {
-    const lvl = selectedLevel.value
-    if (lvl) loadLeaderboardForLevel(lvl.id)
-  }
-  window.addEventListener('leaderboard-updated', leaderboardUpdatedHandler)
-})
-
-onUnmounted(() => {
-  if (leaderboardUpdatedHandler) {
-    window.removeEventListener('leaderboard-updated', leaderboardUpdatedHandler)
-    leaderboardUpdatedHandler = null
+  if (!gameStore.currentUser) {
+    gameStore.setCurrentUser(null)
   }
 })
 </script>

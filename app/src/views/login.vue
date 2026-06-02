@@ -10,37 +10,19 @@
 
       <div class="field">
         <label>Username</label>
-        <input
-          v-model="username"
-          type="text"
-          placeholder="Enter username"
-        />
+        <input v-model="username" type="text" placeholder="Enter username" />
       </div>
 
       <div class="field">
         <label>Password</label>
-        <input
-          v-model="password"
-          type="password"
-          placeholder="••••••••"
-        />
+        <input v-model="password" type="password" placeholder="••••••••" />
       </div>
 
-      <button
-        class="submit-btn"
-        @click="handleLogin"
-        :disabled="loading"
-      >
+      <button class="submit-btn" @click="handleLogin" :disabled="loading">
         {{ loading ? 'Signing in...' : '▶ SIGN IN' }}
       </button>
 
-      <button
-        class="alt-btn"
-        @click="handleSignup"
-        :disabled="loading"
-      >
-        No account? Sign Up
-      </button>
+      <button class="alt-btn" @click="handleSignup" :disabled="loading">No account? Sign Up</button>
     </div>
   </div>
 </template>
@@ -48,9 +30,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useGameStore } from '@/stores/game'
 import { supabase } from '../lib/supabase'
 
 const router = useRouter()
+const gameStore = useGameStore()
 
 const username = ref('')
 const password = ref('')
@@ -65,36 +49,40 @@ async function handleLogin() {
   loading.value = true
   error.value = ''
 
-  const { error: err } = await supabase.auth.signInWithPassword({
-    email: makeFakeEmail(username.value),
-    password: password.value,
-  })
+  try {
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: makeFakeEmail(username.value),
+      password: password.value,
+    })
 
-  if (err) {
-    error.value = err.message
-  } else {
+    if (authError) throw authError
+    gameStore.setCurrentUser(data?.user ?? null)
     await router.push('/menu')
+  } catch (err) {
+    error.value = err?.message || 'Login failed. Please try again.'
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
 }
 
 async function handleSignup() {
   loading.value = true
   error.value = ''
 
-  const { error: err } = await supabase.auth.signUp({
-    email: makeFakeEmail(username.value),
-    password: password.value,
-  })
+  try {
+    const { data, error: authError } = await supabase.auth.signUp({
+      email: makeFakeEmail(username.value),
+      password: password.value,
+    })
 
-  if (err) {
-    error.value = err.message
-  } else {
+    if (authError) throw authError
+    gameStore.setCurrentUser(data?.user ?? null)
     await router.push('/menu')
+  } catch (err) {
+    error.value = err?.message || 'Sign up failed. Please try again.'
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
 }
 </script>
 
