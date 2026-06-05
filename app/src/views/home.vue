@@ -39,13 +39,6 @@
         >
           <span>{{ row.displayName }}</span>
           <span>{{ row.score }}</span>
-          <button v-if="row.id" @click="handleDeleteScore(row.id)">Delete</button>
-          <button
-            v-if="row.id && row.user_id === gameStore.currentUser?.id"
-            @click="handleBonusScore(row)"
-          >
-            +5 Bonus
-          </button>
         </div>
 
         <div v-if="!gameStore.leaderboardLoading && leaderboardDisplayRows.length === 0">
@@ -82,15 +75,6 @@ const leaderboardDisplayRows = computed(() =>
 function selectLevel(level) {
   gameStore.setSelectedLevel(level.id)
   gameStore.loadLeaderboard(level.id)
-}
-
-function handleDeleteScore(scoreId) {
-  gameStore.deleteScoreEntry(scoreId)
-}
-
-function handleBonusScore(row) {
-  const updatedScore = Number(row.score) + 5
-  gameStore.updateScoreEntry(row.id, updatedScore)
 }
 
 const myScores = computed(() =>
