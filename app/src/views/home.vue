@@ -54,9 +54,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, onUnmounted } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { LEVELS } from '@/components/levels'
+import { supabase } from '@/lib/supabase'
 
 const levels = Object.values(LEVELS)
 const gameStore = useGameStore()
@@ -67,8 +68,8 @@ const selectedLevel = computed(() =>
 
 const leaderboardDisplayRows = computed(() =>
   gameStore.leaderboardEntries.map((row) => ({
-    ...row,
-    displayName: row.displayName ?? String(row.user_id ?? 'Guest'),
+    displayName: row.username ?? String(row.user_id ?? 'Guest'),
+    score: row.score ?? 0,
   })),
 )
 
@@ -105,21 +106,20 @@ async function loadLeaderboardForLevel(levelId) {
 
   loadingLeaderboard.value = true
 
+  // select username stored on the score row (username column must exist)
   const { data, error } = await supabase
     .from('leaderboard_scores')
-    .select('user_id, score, username') // username now stored on the score row
+    .select('user_id, score, username')
     .eq('level_id', levelId)
     .order('score', { ascending: false })
     .limit(10)
 
   if (error) {
     console.error('Leaderboard load error:', error)
-    leaderboardEntries.value = []
+    gameStore.setLeaderboardEntries([])
   } else {
-    leaderboardEntries.value = (data || []).map((r) => ({
-      ...r,
-      displayName: r.username || String(r.user_id || 'Guest'),
-    }))
+    // store raw rows (username may be null; computed display falls back)
+    gameStore.setLeaderboardEntries(data || [])
   }
 
   loadingLeaderboard.value = false
