@@ -99,6 +99,31 @@ onMounted(() => {
     gameStore.setCurrentUser(null)
   }
 })
+
+async function loadLeaderboardForLevel(levelId) {
+  if (!levelId) return
+
+  loadingLeaderboard.value = true
+
+  const { data, error } = await supabase
+    .from('leaderboard_scores')
+    .select('user_id, score, username') // username now stored on the score row
+    .eq('level_id', levelId)
+    .order('score', { ascending: false })
+    .limit(10)
+
+  if (error) {
+    console.error('Leaderboard load error:', error)
+    leaderboardEntries.value = []
+  } else {
+    leaderboardEntries.value = (data || []).map((r) => ({
+      ...r,
+      displayName: r.username || String(r.user_id || 'Guest'),
+    }))
+  }
+
+  loadingLeaderboard.value = false
+}
 </script>
 
 <style scoped>

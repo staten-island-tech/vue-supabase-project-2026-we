@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+)
 
 export async function fetchLeaderboardScores(levelId) {
   try {
@@ -22,14 +22,44 @@ export async function fetchLeaderboardScores(levelId) {
   }
 }
 
-export async function addLeaderboardScore(scoreRecord) {
+/**
+ * Return current logged in user (works with Supabase v2 and v1)
+ * @returns {Promise<Object|null>}
+ */
+export async function getCurrentUser() {
   try {
-    const { data, error } = await supabase.from('leaderboard_scores').insert([scoreRecord]).select()
+    if (supabase.auth?.getUser) {
+      const { data } = await supabase.auth.getUser()
+      return data?.user ?? null
+    }
+    if (typeof supabase.auth?.user === 'function') {
+      return supabase.auth.user() ?? null
+    }
+  } catch (err) {
+    console.warn('getCurrentUser error', err)
+  }
+  return null
+}
 
-    if (error) throw error
-    return Array.isArray(data) ? data[0] : null
-  } catch (error) {
-    console.error('Supabase insert error:', error)
+/**
+ * Insert a leaderboard score row and return the inserted row (or null on error).
+ * Expects payload like: { user_id, username, level_id, score }
+ */
+export async function addLeaderboardScore(payload) {
+  try {
+    const { data, error } = await supabase
+      .from('leaderboard_scores')
+      .insert([payload])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('addLeaderboardScore error', error)
+      return null
+    }
+    return data ?? null
+  } catch (err) {
+    console.error('addLeaderboardScore exception', err)
     return null
   }
 }
@@ -59,24 +89,5 @@ export async function deleteLeaderboardScore(scoreId) {
   } catch (error) {
     console.error('Supabase delete error:', error)
     return false
-  }
-}
-
-export async function getCurrentUser() {
-  try {
-    if (supabase.auth.getUser) {
-      const { data, error } = await supabase.auth.getUser()
-      if (error) throw error
-      return data?.user ?? null
-    }
-
-    if (typeof supabase.auth.user === 'function') {
-      return supabase.auth.user()
-    }
-
-    return null
-  } catch (error) {
-    console.error('Supabase auth error:', error)
-    return null
   }
 }

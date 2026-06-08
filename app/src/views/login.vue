@@ -56,7 +56,17 @@ async function handleLogin() {
     })
 
     if (authError) throw authError
-    gameStore.setCurrentUser(data?.user ?? null)
+
+    const user = data?.user ?? null
+    const email = user?.email ?? makeFakeEmail(username.value)
+    const localName = String(email).split('@')[0]
+
+    // ensure profiles row exists and username is set to local part
+    await supabase.from('profiles').upsert({ id: user.id, username: localName }).select()
+
+    // set store current user with username
+    gameStore.setCurrentUser({ id: user.id, email, username: localName })
+
     await router.push('/menu')
   } catch (err) {
     error.value = err?.message || 'Login failed. Please try again.'
@@ -76,7 +86,15 @@ async function handleSignup() {
     })
 
     if (authError) throw authError
-    gameStore.setCurrentUser(data?.user ?? null)
+
+    const user = data?.user ?? null
+    const email = user?.email ?? makeFakeEmail(username.value)
+    const localName = String(email).split('@')[0]
+
+    // create profile row with username = local part
+    await supabase.from('profiles').upsert({ id: user.id, username: localName }).select()
+
+    gameStore.setCurrentUser({ id: user.id, email, username: localName })
     await router.push('/menu')
   } catch (err) {
     error.value = err?.message || 'Sign up failed. Please try again.'
