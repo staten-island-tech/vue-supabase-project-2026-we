@@ -9,8 +9,8 @@
       </div>
 
       <div class="field">
-        <label>Username</label>
-        <input v-model="username" type="text" placeholder="Enter username" />
+        <label>Email</label>
+        <input v-model="email" type="text" placeholder="you@example.com" />
       </div>
 
       <div class="field">
@@ -19,7 +19,7 @@
       </div>
 
       <button class="submit-btn" @click="handleLogin" :disabled="loading">
-        {{ loading ? 'Signing in...' : '▶ SIGN IN' }}
+        {{ loading ? 'Signing in…' : 'Sign In' }}
       </button>
 
       <button class="alt-btn" @click="handleSignup" :disabled="loading">No account? Sign Up</button>
@@ -30,46 +30,51 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase, getCurrentUser } from '@/lib/supabase'
 import { useGameStore } from '@/stores/game'
-import { supabase } from '../lib/supabase'
 
 const router = useRouter()
 const gameStore = useGameStore()
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
-function makeFakeEmail(username) {
-  return `${username}@app.local`
+async function ensureProfile(userId, emailVal) {
+  if (!userId) return
+  const localName = String(emailVal || '').split('@')[0] || 'Guest'
+  try {
+    await supabase.from('profiles').upsert({ id: userId, username: localName }).select()
+  } catch (e) {
+    console.warn('profiles upsert failed', e)
+  }
 }
 
 async function handleLogin() {
   loading.value = true
   error.value = ''
-
   try {
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: makeFakeEmail(username.value),
+    const res = await supabase.auth.signInWithPassword({
+      email: email.value,
       password: password.value,
     })
 
-    if (authError) throw authError
+    if (res.error) throw res.error
 
-    const user = data?.user ?? null
-    const email = user?.email ?? makeFakeEmail(username.value)
-    const localName = String(email).split('@')[0]
+    const user = res.data?.user ?? null
+    await ensureProfile(user?.id, user?.email ?? email.value)
 
-    // ensure profiles row exists and username is set to local part
-    await supabase.from('profiles').upsert({ id: user.id, username: localName }).select()
-
-    // set store current user with username
-    gameStore.setCurrentUser({ id: user.id, email, username: localName })
+    // set store user
+    gameStore.setCurrentUser({
+      id: user?.id ?? null,
+      email: user?.email ?? email.value,
+      username: String((user?.email ?? email.value).split('@')[0] || 'Guest'),
+    })
 
     await router.push('/menu')
   } catch (err) {
-    error.value = err?.message || 'Login failed. Please try again.'
+    error.value = err?.message || 'Login failed'
   } finally {
     loading.value = false
   }
@@ -78,26 +83,30 @@ async function handleLogin() {
 async function handleSignup() {
   loading.value = true
   error.value = ''
-
   try {
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: makeFakeEmail(username.value),
+    const res = await supabase.auth.signUp({
+      email: email.value,
       password: password.value,
     })
 
-    if (authError) throw authError
+    if (res.error) throw res.error
 
-    const user = data?.user ?? null
-    const email = user?.email ?? makeFakeEmail(username.value)
-    const localName = String(email).split('@')[0]
+    // signUp may return user in res.data.user or require confirmation; attempt to get user
+    const user = res.data?.user ?? null
+    // if user is not immediately available, try getCurrentUser()
+    const current = user || (await getCurrentUser())
 
-    // create profile row with username = local part
-    await supabase.from('profiles').upsert({ id: user.id, username: localName }).select()
+    await ensureProfile(current?.id, email.value)
 
-    gameStore.setCurrentUser({ id: user.id, email, username: localName })
+    gameStore.setCurrentUser({
+      id: current?.id ?? null,
+      email: email.value,
+      username: String(email.value.split('@')[0] || 'Guest'),
+    })
+
     await router.push('/menu')
   } catch (err) {
-    error.value = err?.message || 'Sign up failed. Please try again.'
+    error.value = err?.message || 'Signup failed'
   } finally {
     loading.value = false
   }
