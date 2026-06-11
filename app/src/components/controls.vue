@@ -177,7 +177,6 @@ function pivot() {
   iceIsAnchor = !iceIsAnchor
 
   if (currentBeat >= tiles.length - 1) {
-    // emit the event so parent can save / show leaderboard
     emit('stationaryOnLast', { score: score.value })
     endScreen()
     return
