@@ -1,12 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Create the Supabase client using environment variables from Vite.
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY,
 )
 
-// Fetch top 10 leaderboard rows for a level. Returns an array (empty on error).
 export async function fetchLeaderboardScores(levelId) {
   try {
     const res = await supabase
@@ -24,7 +22,6 @@ export async function fetchLeaderboardScores(levelId) {
   }
 }
 
-// Return the currently logged-in user object, or null when not signed in.
 export async function getCurrentUser() {
   try {
     if (supabase.auth && typeof supabase.auth.getUser === 'function') {
@@ -41,14 +38,10 @@ export async function getCurrentUser() {
   }
   return null
 }
-
-// Add or update a leaderboard score.
-// payload should be: { user_id, username, level_id, score }
 export async function addLeaderboardScore(payload) {
   try {
     console.debug('addLeaderboardScore payload:', payload)
 
-    // Try to determine a username.
     let username = (payload && payload.username) || null
 
     if (!username) {
@@ -75,7 +68,6 @@ export async function addLeaderboardScore(payload) {
 
     if (!username) username = 'Guest'
 
-    // Normalize level id when it looks numeric.
     const levelIdNormalized =
       payload && payload.level_id !== undefined && /^-?\d+$/.test(String(payload.level_id))
         ? Number(payload.level_id)
@@ -91,7 +83,6 @@ export async function addLeaderboardScore(payload) {
       username: String(username),
     }
 
-    // If user exists, check for an existing row for same user+level.
     if (userId) {
       const existingRes = await supabase
         .from('leaderboard_scores')
@@ -129,7 +120,6 @@ export async function addLeaderboardScore(payload) {
       }
     }
 
-    // Insert new row when no existing row was found.
     const insertRes = await supabase.from('leaderboard_scores').insert([row]).select()
     if (insertRes && insertRes.error) {
       console.error('addLeaderboardScore error', insertRes.error, 'response:', insertRes)
@@ -144,7 +134,6 @@ export async function addLeaderboardScore(payload) {
   }
 }
 
-// Update a leaderboard row by id. Returns the updated row or null.
 export async function updateLeaderboardScore(scoreId, updates) {
   try {
     const res = await supabase.from('leaderboard_scores').update(updates).eq('id', scoreId).select()
@@ -159,7 +148,6 @@ export async function updateLeaderboardScore(scoreId, updates) {
   }
 }
 
-// Delete a leaderboard row by id. Returns true when delete succeeded.
 export async function deleteLeaderboardScore(scoreId) {
   try {
     const res = await supabase.from('leaderboard_scores').delete().eq('id', scoreId)
@@ -172,7 +160,6 @@ export async function deleteLeaderboardScore(scoreId) {
   }
 }
 
-// Expose helpers for quick debugging in browser console.
 if (typeof window !== 'undefined') {
   window.supabase = supabase
   window.getCurrentUser = getCurrentUser

@@ -41,7 +41,6 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
-// Ensure a simple profile row exists for the user (username derived from email).
 async function ensureProfile(userId, emailVal) {
   if (!userId) return
   var localName = String(emailVal || '').split('@')[0]
@@ -53,7 +52,6 @@ async function ensureProfile(userId, emailVal) {
   }
 }
 
-// Handle sign-in with email+password.
 async function handleLogin() {
   loading.value = true
   error.value = ''
@@ -68,10 +66,8 @@ async function handleLogin() {
     var user = null
     if (res && res.data && res.data.user) user = res.data.user
 
-    // Ensure profile row exists (use signup email as fallback)
     await ensureProfile(user && user.id ? user.id : null, (user && user.email) || email.value)
 
-    // Set the user in the store (safe fallbacks)
     gameStore.setCurrentUser({
       id: user && user.id ? user.id : null,
       email: user && user.email ? user.email : email.value,
@@ -86,7 +82,6 @@ async function handleLogin() {
   }
 }
 
-// Handle a signup request.
 async function handleSignup() {
   loading.value = true
   error.value = ''
@@ -94,7 +89,6 @@ async function handleSignup() {
     var res = await supabase.auth.signUp({ email: email.value, password: password.value })
     if (res && res.error) throw res.error
 
-    // Try to obtain a user object (may require confirmation depending on Supabase settings).
     var user = null
     if (res && res.data && res.data.user) user = res.data.user
     if (!user) {

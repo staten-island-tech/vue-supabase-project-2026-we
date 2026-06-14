@@ -59,38 +59,30 @@
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import gsap from 'gsap'
 
-// Props: the component receives a `level` object from the parent.
 const props = defineProps({
   level: Object,
 })
 
-// Define events this component can emit.
 const emit = defineEmits(['stationaryOnLast'])
 
-// Simple state objects for the two orbiting points and the camera.
 const ice = reactive({ x: 0, y: 0 })
 const fire = reactive({ x: 0, y: 0 })
 const camera = reactive({ x: 0, y: 0 })
 
-// Tiles is an array of points that the player will move toward.
 const tiles = reactive([])
 
-// Simple reactive values for score, judgement text, and finished flag.
 const score = ref(0)
 const judgement = ref('')
 const finished = ref(false)
 
-// Internal (non-reactive) game state.
 let currentBeat = 0
 let angle = 0
 let iceIsAnchor = true
 
-// Basic helper: distance between two points.
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y)
 }
 
-// Set a point's position clearly.
 function setPosition(target, x, y) {
   target.x = x
   target.y = y
@@ -98,13 +90,11 @@ function setPosition(target, x, y) {
 
 const RADIUS = 150
 
-// Place `mover` on a circle around `anchor` using the shared `angle`.
 function orbit(anchor, mover) {
   mover.x = anchor.x + Math.cos(angle) * RADIUS
   mover.y = anchor.y + Math.sin(angle) * RADIUS
 }
 
-// Show a short judgement message (like "Perfect" or "+30").
 function showJudgement(text, duration = 400) {
   judgement.value = text
   setTimeout(() => {
@@ -114,7 +104,6 @@ function showJudgement(text, duration = 400) {
   }, duration)
 }
 
-// Build the tiles array from the level's beat count.
 function generateTiles() {
   tiles.length = 0
   const total = props.level && props.level.beats ? props.level.beats : 0
@@ -123,7 +112,6 @@ function generateTiles() {
   }
 }
 
-// Place the ice and fire points at the start of the level.
 function setupGame() {
   generateTiles()
   const start = tiles[0]
@@ -133,7 +121,6 @@ function setupGame() {
   }
 }
 
-// Reset everything to play again.
 function resetGame() {
   finished.value = false
   currentBeat = 0
@@ -157,7 +144,6 @@ function endScreen() {
   showJudgement('Level Complete!')
 }
 
-// Called when the player taps/clicks/presses space to move to the next tile.
 function pivot() {
   const nextTile = tiles[currentBeat + 1]
   if (!nextTile) return
@@ -165,7 +151,6 @@ function pivot() {
   const mover = getMover()
   const hitDistance = distance(mover, nextTile)
 
-  // If too far, treat as a miss and restart.
   if (hitDistance > 45) {
     resetGame()
     return
@@ -189,7 +174,6 @@ function pivot() {
   }
 }
 
-// Per-frame update function. Keeps the orbit moving and camera following.
 function update() {
   if (finished.value) return
   const speed = props.level && props.level.orbitSpeed ? props.level.orbitSpeed : 0
@@ -200,14 +184,12 @@ function update() {
   camera.y += (500 - focus.y - camera.y) * 0.08
 }
 
-// Handle mouse and keyboard input in a clear, explicit way.
 function handleInput(event) {
   if (finished.value) return
 
   let pressed = false
   if (event.type === 'mousedown') pressed = true
   if (event.type === 'keydown') {
-    // Accept Space key (explicit check).
     if (event.code === 'Space' && event.repeat === false) pressed = true
   }
 

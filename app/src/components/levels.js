@@ -1,4 +1,3 @@
-// Simple, easy-to-read level definitions.
 export const LEVELS = {
   1: {
     id: 1,
