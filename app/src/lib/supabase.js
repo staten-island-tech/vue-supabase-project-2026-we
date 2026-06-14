@@ -1,39 +1,40 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Create the Supabase client using environment variables from Vite.
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY,
 )
 
+// Fetch top 10 leaderboard rows for a level. Returns an array (empty on error).
 export async function fetchLeaderboardScores(levelId) {
   try {
-    const { data, error } = await supabase
+    const res = await supabase
       .from('leaderboard_scores')
       .select('*')
       .eq('level_id', levelId)
       .order('score', { ascending: false })
       .limit(10)
 
-    if (error) throw error
-    return data ?? []
-  } catch (error) {
-    console.error('Supabase read error:', error.message || error)
+    if (res && res.error) throw res.error
+    return (res && res.data) || []
+  } catch (err) {
+    console.error('Failed to read leaderboard rows:', err && (err.message || err))
     return []
   }
 }
 
-/**
- * Return current logged in user (works with Supabase v2 and v1)
- * @returns {Promise<Object|null>}
- */
+// Return the currently logged-in user object, or null when not signed in.
 export async function getCurrentUser() {
   try {
-    if (supabase.auth?.getUser) {
-      const { data } = await supabase.auth.getUser()
-      return data?.user ?? null
+    if (supabase.auth && typeof supabase.auth.getUser === 'function') {
+      const result = await supabase.auth.getUser()
+      const data = result && result.data
+      return (data && data.user) || null
     }
-    if (typeof supabase.auth?.user === 'function') {
-      return supabase.auth.user() ?? null
+
+    if (supabase.auth && typeof supabase.auth.user === 'function') {
+      return supabase.auth.user() || null
     }
   } catch (err) {
     console.warn('getCurrentUser error', err)
@@ -41,138 +42,137 @@ export async function getCurrentUser() {
   return null
 }
 
-/**
- * Insert a leaderboard score row and return the inserted row (or null on error).
- * Expects payload like: { user_id, username, level_id, score }
- */
+// Add or update a leaderboard score.
+// payload should be: { user_id, username, level_id, score }
 export async function addLeaderboardScore(payload) {
   try {
-    console.debug('addLeaderboardScore input payload:', payload)
+    console.debug('addLeaderboardScore payload:', payload)
 
-    // ensure username (derive from payload/profile/email or fallback)
-    let username = payload?.username ?? null
+    // Try to determine a username.
+    let username = (payload && payload.username) || null
 
     if (!username) {
       try {
         const user = await getCurrentUser()
-        if (user?.id) {
-          // try email local-part first (cheap, reliable)
+        if (user && user.id) {
           if (user.email) username = String(user.email).split('@')[0]
-          // try profiles table only if still missing (catch errors)
+
           if (!username) {
-            const { data: prof, error: profErr } = await supabase
+            const profRes = await supabase
               .from('profiles')
               .select('username')
               .eq('id', user.id)
               .single()
-            if (!profErr && prof?.username) username = prof.username
+            const prof = profRes && profRes.data
+            const profErr = profRes && profRes.error
+            if (!profErr && prof && prof.username) username = prof.username
           }
         }
       } catch (e) {
-        console.warn('profile lookup failed, continuing with fallback', e)
+        console.warn('Profile lookup failed; continuing with fallback', e)
       }
     }
 
     if (!username) username = 'Guest'
 
-    // normalize payload
+    // Normalize level id when it looks numeric.
     const levelIdNormalized =
-      payload.level_id !== undefined && /^-?\d+$/.test(String(payload.level_id))
+      payload && payload.level_id !== undefined && /^-?\d+$/.test(String(payload.level_id))
         ? Number(payload.level_id)
-        : payload.level_id
+        : payload && payload.level_id
 
-    const scoreNum = Number(payload.score ?? 0)
-    const userId = payload.user_id ?? null
+    const scoreNum = Number((payload && payload.score) || 0)
+    const userId = (payload && payload.user_id) || null
 
-    const insertPayload = {
+    const row = {
       user_id: userId,
       level_id: levelIdNormalized,
       score: scoreNum,
       username: String(username),
     }
 
-    console.debug('addLeaderboardScore normalized payload:', insertPayload)
-
-    // If we have a user id, check for existing score for same level to avoid unique constraint errors
+    // If user exists, check for an existing row for same user+level.
     if (userId) {
-      const { data: existingRows, error: existingErr } = await supabase
+      const existingRes = await supabase
         .from('leaderboard_scores')
         .select('id,score,username')
         .eq('user_id', userId)
         .eq('level_id', levelIdNormalized)
         .limit(1)
+      const existingRows = existingRes && existingRes.data
+      const existingErr = existingRes && existingRes.error
 
       if (existingErr) {
-        console.warn('Could not check existing leaderboard row:', existingErr)
+        console.warn('Could not check for existing leaderboard row:', existingErr)
       } else if (Array.isArray(existingRows) && existingRows.length > 0) {
         const existing = existingRows[0]
-        // if existing is higher or equal, do nothing
-        if (Number(existing.score ?? 0) >= scoreNum) {
+        if (Number((existing && existing.score) || 0) >= scoreNum) {
           console.debug('Existing score is higher or equal; skipping insert/update', existing)
           return { data: existing, error: null, response: null }
         }
-        // otherwise update the existing row with new higher score & username
-        const { data: updData, error: updErr } = await supabase
+
+        const updRes = await supabase
           .from('leaderboard_scores')
-          .update({ score: scoreNum, username: insertPayload.username })
+          .update({ score: scoreNum, username: row.username })
           .eq('id', existing.id)
           .select()
           .single()
+        const updated = updRes && updRes.data
+        const updateErr = updRes && updRes.error
 
-        if (updErr) {
-          console.error('Failed to update existing leaderboard row', updErr)
-          return { data: null, error: updErr, response: null }
+        if (updateErr) {
+          console.error('Failed to update existing leaderboard row', updateErr)
+          return { data: null, error: updateErr, response: null }
         }
-        console.debug('Updated existing leaderboard row', updData)
-        return { data: updData, error: null, response: null }
+        console.debug('Updated leaderboard row', updated)
+        return { data: updated, error: null, response: null }
       }
     }
 
-    // No existing row (or anonymous user) — insert new row
-    const res = await supabase.from('leaderboard_scores').insert([insertPayload]).select()
-
-    if (res.error) {
-      console.error('addLeaderboardScore error', res.error, 'response:', res)
-      return { data: null, error: res.error, response: res }
+    // Insert new row when no existing row was found.
+    const insertRes = await supabase.from('leaderboard_scores').insert([row]).select()
+    if (insertRes && insertRes.error) {
+      console.error('addLeaderboardScore error', insertRes.error, 'response:', insertRes)
+      return { data: null, error: insertRes.error, response: insertRes }
     }
 
-    console.debug('addLeaderboardScore success', res.data)
-    return { data: res.data, error: null, response: res }
+    console.debug('addLeaderboardScore inserted', insertRes && insertRes.data)
+    return { data: insertRes && insertRes.data, error: null, response: insertRes }
   } catch (err) {
     console.error('addLeaderboardScore exception', err)
     return { data: null, error: err, response: null }
   }
 }
 
+// Update a leaderboard row by id. Returns the updated row or null.
 export async function updateLeaderboardScore(scoreId, updates) {
   try {
-    const { data, error } = await supabase
-      .from('leaderboard_scores')
-      .update(updates)
-      .eq('id', scoreId)
-      .select()
+    const res = await supabase.from('leaderboard_scores').update(updates).eq('id', scoreId).select()
+    const data = res && res.data
+    const error = res && res.error
 
     if (error) throw error
     return Array.isArray(data) ? data[0] : null
-  } catch (error) {
-    console.error('Supabase update error:', error)
+  } catch (err) {
+    console.error('Supabase update error:', err)
     return null
   }
 }
 
+// Delete a leaderboard row by id. Returns true when delete succeeded.
 export async function deleteLeaderboardScore(scoreId) {
   try {
-    const { error } = await supabase.from('leaderboard_scores').delete().eq('id', scoreId)
-
+    const res = await supabase.from('leaderboard_scores').delete().eq('id', scoreId)
+    const error = res && res.error
     if (error) throw error
     return true
-  } catch (error) {
-    console.error('Supabase delete error:', error)
+  } catch (err) {
+    console.error('Supabase delete error:', err)
     return false
   }
 }
 
-// expose for quick debugging in the browser console
+// Expose helpers for quick debugging in browser console.
 if (typeof window !== 'undefined') {
   window.supabase = supabase
   window.getCurrentUser = getCurrentUser
@@ -180,7 +180,8 @@ if (typeof window !== 'undefined') {
   window.updateLeaderboardScore = updateLeaderboardScore
   window.deleteLeaderboardScore = deleteLeaderboardScore
 
-  window.debugFetchScores = async (limit = 1) => {
+  window.debugFetchScores = async function (limit) {
+    limit = typeof limit === 'number' ? limit : 1
     console.log('current user ->', await getCurrentUser())
     const res = await supabase
       .from('leaderboard_scores')

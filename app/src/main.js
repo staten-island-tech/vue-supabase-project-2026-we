@@ -11,17 +11,20 @@ app.use(pinia)
 app.use(router)
 app.mount('#app')
 
-// After the app is running, load the current user once and save it to the store.
-// This is simple and helps the router guard and UI know if someone is logged in.
-;(async () => {
-  const user = await getCurrentUser().catch(() => null)
-  const store = useGameStore()
+// After the app starts, try to load the signed-in user and store it.
+;(async function () {
+  var user = null
+  try {
+    user = await getCurrentUser()
+  } catch (e) {
+    user = null
+  }
+
+  var store = useGameStore()
   if (user) {
-    store.setCurrentUser({
-      id: user.id ?? null,
-      email: user.email ?? null,
-      username: user.email ? String(user.email).split('@')[0] : 'Guest',
-    })
+    var username = 'Guest'
+    if (user.email) username = String(user.email).split('@')[0]
+    store.setCurrentUser({ id: user.id || null, email: user.email || null, username: username })
   } else {
     store.setCurrentUser(null)
   }

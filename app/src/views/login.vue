@@ -41,9 +41,11 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
+// Ensure a simple profile row exists for the user (username derived from email).
 async function ensureProfile(userId, emailVal) {
   if (!userId) return
-  const localName = String(emailVal || '').split('@')[0] || 'Guest'
+  var localName = String(emailVal || '').split('@')[0]
+  if (!localName) localName = 'Guest'
   try {
     await supabase.from('profiles').upsert({ id: userId, username: localName }).select()
   } catch (e) {
@@ -51,62 +53,69 @@ async function ensureProfile(userId, emailVal) {
   }
 }
 
+// Handle sign-in with email+password.
 async function handleLogin() {
   loading.value = true
   error.value = ''
   try {
-    const res = await supabase.auth.signInWithPassword({
+    var res = await supabase.auth.signInWithPassword({
       email: email.value,
       password: password.value,
     })
 
-    if (res.error) throw res.error
+    if (res && res.error) throw res.error
 
-    const user = res.data?.user ?? null
-    await ensureProfile(user?.id, user?.email ?? email.value)
+    var user = null
+    if (res && res.data && res.data.user) user = res.data.user
 
-    // set store user
+    // Ensure profile row exists (use signup email as fallback)
+    await ensureProfile(user && user.id ? user.id : null, (user && user.email) || email.value)
+
+    // Set the user in the store (safe fallbacks)
     gameStore.setCurrentUser({
-      id: user?.id ?? null,
-      email: user?.email ?? email.value,
-      username: String((user?.email ?? email.value).split('@')[0] || 'Guest'),
+      id: user && user.id ? user.id : null,
+      email: user && user.email ? user.email : email.value,
+      username: String(((user && user.email) || email.value).split('@')[0] || 'Guest'),
     })
 
     await router.push('/menu')
   } catch (err) {
-    error.value = err?.message || 'Login failed'
+    error.value = err && err.message ? err.message : 'Login failed'
   } finally {
     loading.value = false
   }
 }
 
+// Handle a signup request.
 async function handleSignup() {
   loading.value = true
   error.value = ''
   try {
-    const res = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
-    })
+    var res = await supabase.auth.signUp({ email: email.value, password: password.value })
+    if (res && res.error) throw res.error
 
-    if (res.error) throw res.error
+    // Try to obtain a user object (may require confirmation depending on Supabase settings).
+    var user = null
+    if (res && res.data && res.data.user) user = res.data.user
+    if (!user) {
+      try {
+        user = await getCurrentUser()
+      } catch (e) {
+        user = null
+      }
+    }
 
-    // signUp may return user in res.data.user or require confirmation; attempt to get user
-    const user = res.data?.user ?? null
-    // if user is not immediately available, try getCurrentUser()
-    const current = user || (await getCurrentUser())
-
-    await ensureProfile(current?.id, email.value)
+    await ensureProfile(user && user.id ? user.id : null, email.value)
 
     gameStore.setCurrentUser({
-      id: current?.id ?? null,
+      id: user && user.id ? user.id : null,
       email: email.value,
       username: String(email.value.split('@')[0] || 'Guest'),
     })
 
     await router.push('/menu')
   } catch (err) {
-    error.value = err?.message || 'Signup failed'
+    error.value = err && err.message ? err.message : 'Signup failed'
   } finally {
     loading.value = false
   }

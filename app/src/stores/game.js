@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { supabase } from '@/lib/supabase'
+import { fetchLeaderboardScores } from '@/lib/supabase'
 
 export const useGameStore = defineStore('game', {
   state: () => ({
@@ -7,6 +7,9 @@ export const useGameStore = defineStore('game', {
     currentUser: null, // { id, email, username }
     selectedLevelId: null,
     leaderboardEntries: [],
+    // Loading and error flags for leaderboard UI
+    leaderboardLoading: false,
+    leaderboardError: null,
   }),
   actions: {
     resetGame() {
@@ -26,29 +29,29 @@ export const useGameStore = defineStore('game', {
       this.leaderboardEntries = Array.isArray(entries) ? entries.slice() : []
     },
 
-    // fetch leaderboard rows for a level and store them
+    // Fetch leaderboard rows for a level and store them.
+    // This uses the helper `fetchLeaderboardScores` to keep code simple.
     async loadLeaderboard(levelId) {
       if (!levelId) return null
+
+      // Mark loading state so the UI can show a spinner/message.
+      this.leaderboardLoading = true
+      this.leaderboardError = null
+
       try {
-        const { data, error } = await supabase
-          .from('leaderboard_scores')
-          .select('user_id, score, username')
-          .eq('level_id', levelId)
-          .order('score', { ascending: false })
-          .limit(10)
+        const rows = await fetchLeaderboardScores(levelId)
 
-        if (error) {
-          console.error('loadLeaderboard error', error)
-          this.setLeaderboardEntries([])
-          return null
-        }
-
-        this.setLeaderboardEntries(data || [])
-        return data || []
+        // `fetchLeaderboardScores` returns an array (or empty array on error).
+        this.setLeaderboardEntries(Array.isArray(rows) ? rows.slice() : [])
+        return rows || []
       } catch (err) {
+        // Store a simple error message for UI and reset entries.
         console.error('loadLeaderboard exception', err)
         this.setLeaderboardEntries([])
+        this.leaderboardError = err && (err.message || String(err))
         return null
+      } finally {
+        this.leaderboardLoading = false
       }
     },
   },

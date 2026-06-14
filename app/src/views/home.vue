@@ -54,18 +54,26 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch, onUnmounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { LEVELS } from '@/components/levels'
+
+// Keep supabase helper available if you want manual fetch here later.
+// Most leaderboard operations are handled in the game store.
 import { supabase } from '@/lib/supabase'
 
+// Convert LEVELS map to a simple array of level objects.
 const levels = Object.values(LEVELS)
+
+// Get the central game store instance. This store keeps app state.
 const gameStore = useGameStore()
 
+// Find the currently selected level object based on id in the store.
 const selectedLevel = computed(() =>
   levels.find((level) => String(level.id) === String(gameStore.selectedLevelId)),
 )
 
+// Prepare rows for the leaderboard UI. Show username or fallback to user id or 'Guest'.
 const leaderboardDisplayRows = computed(() =>
   gameStore.leaderboardEntries.map((row) => ({
     displayName: row.username ?? String(row.user_id ?? 'Guest'),
@@ -73,15 +81,19 @@ const leaderboardDisplayRows = computed(() =>
   })),
 )
 
+// Called when a user clicks a level card.
+// We set the selected level in the store and ask the store to load scores.
 function selectLevel(level) {
   gameStore.setSelectedLevel(level.id)
   gameStore.loadLeaderboard(level.id)
 }
 
+// Scores that belong to the current user (if signed in).
 const myScores = computed(() =>
   gameStore.leaderboardEntries.filter((row) => row.user_id === gameStore.currentUser?.id),
 )
 
+// When the selected level id changes, automatically reload leaderboard for that level.
 watch(
   () => gameStore.selectedLevelId,
   (levelId) => {
@@ -91,6 +103,7 @@ watch(
   },
 )
 
+// On first load, pick the first level and ensure store has a currentUser set (null if anonymous).
 onMounted(() => {
   if (levels.length > 0) {
     selectLevel(levels[0])
@@ -101,29 +114,8 @@ onMounted(() => {
   }
 })
 
-async function loadLeaderboardForLevel(levelId) {
-  if (!levelId) return
-
-  loadingLeaderboard.value = true
-
-  // select username stored on the score row (username column must exist)
-  const { data, error } = await supabase
-    .from('leaderboard_scores')
-    .select('user_id, score, username')
-    .eq('level_id', levelId)
-    .order('score', { ascending: false })
-    .limit(10)
-
-  if (error) {
-    console.error('Leaderboard load error:', error)
-    gameStore.setLeaderboardEntries([])
-  } else {
-    // store raw rows (username may be null; computed display falls back)
-    gameStore.setLeaderboardEntries(data || [])
-  }
-
-  loadingLeaderboard.value = false
-}
+// Note: There used to be a local function here that directly called supabase.
+// The app now uses the game store's `loadLeaderboard` method so we keep logic in one place.
 </script>
 
 <style scoped>

@@ -1,3 +1,4 @@
+// Simple, easy-to-read level definitions.
 export const LEVELS = {
   1: {
     id: 1,
@@ -38,5 +39,7 @@ export const LEVELS = {
 }
 
 export function getLevelById(id) {
-  return LEVELS[Number(id)] ?? null
+  var n = Number(id)
+  if (Number.isNaN(n)) return null
+  return LEVELS[n] || null
 }
