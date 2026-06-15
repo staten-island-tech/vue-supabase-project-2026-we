@@ -5,6 +5,7 @@ export const useGameStore = defineStore('game', {
   state: () => ({
     score: 0,
     currentUser: null,
+    isTestUser: false,
     selectedLevelId: null,
     leaderboardEntries: [],
 
@@ -18,6 +19,9 @@ export const useGameStore = defineStore('game', {
 
     setCurrentUser(user) {
       this.currentUser = user ? { ...user } : null
+    },
+    setIsTestUser(v) {
+      this.isTestUser = !!v
     },
 
     setSelectedLevel(id) {

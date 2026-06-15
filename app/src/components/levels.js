@@ -15,7 +15,7 @@ export const LEVELS = {
     difficulty: 'Medium',
     img: '/lincoln.png',
     orbitSpeed: 0.07,
-    beats: 13,
+    beats: 17,
   },
   3: {
     id: 3,

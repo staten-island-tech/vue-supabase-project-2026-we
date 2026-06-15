@@ -160,12 +160,85 @@ export async function deleteLeaderboardScore(scoreId) {
   }
 }
 
+export async function deleteLeaderboardForLevel(levelId) {
+  try {
+    const diagnostics = []
+
+    const normalized = Number(levelId)
+    if (Number.isNaN(normalized)) throw new Error('Invalid level id')
+
+    // Try several delete forms to handle potential type mismatches / RLS behaviors
+    // 1) numeric eq with explicit select('*')
+    try {
+      const res1 = await supabase
+        .from('leaderboard_scores')
+        .delete()
+        .eq('level_id', normalized)
+        .select('*')
+      diagnostics.push({ method: 'eq(number) select(*)', res: res1 })
+      if (res1 && !res1.error && Array.isArray(res1.data) && res1.data.length > 0) {
+        return { ok: true, deletedCount: res1.data.length, diagnostics }
+      }
+    } catch (e) {
+      diagnostics.push({ method: 'eq(number) select(*)', error: String(e) })
+    }
+
+    // 2) eq with string value
+    try {
+      const res2 = await supabase
+        .from('leaderboard_scores')
+        .delete()
+        .eq('level_id', String(levelId))
+        .select('*')
+      diagnostics.push({ method: 'eq(string) select(*)', res: res2 })
+      if (res2 && !res2.error && Array.isArray(res2.data) && res2.data.length > 0) {
+        return { ok: true, deletedCount: res2.data.length, diagnostics }
+      }
+    } catch (e) {
+      diagnostics.push({ method: 'eq(string) select(*)', error: String(e) })
+    }
+
+    // 3) match (useful if level_id column is stored in a different format)
+    try {
+      const res3 = await supabase
+        .from('leaderboard_scores')
+        .delete()
+        .match({ level_id: levelId })
+        .select('*')
+      diagnostics.push({ method: 'match(level_id)', res: res3 })
+      if (res3 && !res3.error && Array.isArray(res3.data) && res3.data.length > 0) {
+        return { ok: true, deletedCount: res3.data.length, diagnostics }
+      }
+    } catch (e) {
+      diagnostics.push({ method: 'match(level_id)', error: String(e) })
+    }
+
+    // 4) final attempt: select matching rows to see what's present (read-only)
+    try {
+      const probe = await supabase
+        .from('leaderboard_scores')
+        .select('*')
+        .eq('level_id', normalized)
+        .limit(50)
+      diagnostics.push({ method: 'probe select eq(number)', res: probe })
+    } catch (e) {
+      diagnostics.push({ method: 'probe select eq(number)', error: String(e) })
+    }
+
+    return { ok: false, deletedCount: 0, diagnostics }
+  } catch (err) {
+    console.error('Supabase delete leaderboard for level error:', err)
+    return { ok: false, deletedCount: 0, error: err }
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.supabase = supabase
   window.getCurrentUser = getCurrentUser
   window.addLeaderboardScore = addLeaderboardScore
   window.updateLeaderboardScore = updateLeaderboardScore
   window.deleteLeaderboardScore = deleteLeaderboardScore
+  window.deleteLeaderboardForLevel = deleteLeaderboardForLevel
 
   window.debugFetchScores = async function (limit) {
     limit = typeof limit === 'number' ? limit : 1

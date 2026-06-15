@@ -74,6 +74,29 @@ async function handleLogin() {
       username: String(((user && user.email) || email.value).split('@')[0] || 'Guest'),
     })
 
+    // If this is the developer test account, mark the session as a test session.
+    // Use the returned user's email or the profile username (if available) so detection
+    // still works when a different display username exists.
+    try {
+      const returnedEmail =
+        (user && user.email && String(user.email).toLowerCase()) ||
+        String(email.value || '').toLowerCase()
+      // derive username from the email fallback to the same logic used when setting currentUser
+      const derivedUsername = String(((user && user.email) || email.value).split('@')[0] || 'Guest')
+
+      const isTestByEmail = returnedEmail === 'testing@gmail.com'
+      const isTestByUsername = derivedUsername === 'testing'
+
+      const isTest = isTestByEmail || isTestByUsername
+      gameStore.setIsTestUser(isTest)
+      if (typeof sessionStorage !== 'undefined') {
+        if (isTest && isTestByEmail) sessionStorage.setItem('isTestUser', '1')
+        else sessionStorage.removeItem('isTestUser')
+      }
+    } catch (e) {
+      console.warn('Could not persist test-user flag', e)
+    }
+
     await router.push('/menu')
   } catch (err) {
     error.value = err && err.message ? err.message : 'Login failed'
