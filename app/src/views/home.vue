@@ -1,22 +1,5 @@
 <template>
   <div class="page">
-    <div class="debug-info">
-      <div v-if="gameStore.currentUser">
-        <strong>User:</strong>
-        <span class="mono">{{ gameStore.currentUser.email || '—' }}</span>
-        <span class="sep">·</span>
-        <strong>Name:</strong>
-        <span class="mono">{{
-          gameStore.currentUser.username ||
-          (gameStore.currentUser.email && gameStore.currentUser.email.split('@')[0]) ||
-          'Guest'
-        }}</span>
-        <span v-if="gameStore.isTestUser" class="test-badge">TEST</span>
-      </div>
-      <div v-else>
-        <em>Not signed in</em>
-      </div>
-    </div>
     <div class="lvlcontain">
       <h1>Song Selector</h1>
       <div class="levelcard" v-for="level in levels" :key="level.id" @click="selectLevel(level)">
